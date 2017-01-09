@@ -1,0 +1,70 @@
+* { margin: 0; padding: 0; border: 0; }
+div, p, h1, h2, h3, ul, ol { 
+  position: relative; float: left; box-sizing: border-box; width: 100%; 
+  height: auto; overflow-y: auto;
+}
+h1 { width: auto; }
+html { height: 100%; }
+body { 
+  width: 100%; height: 100%; overflow-y: scroll; background-color: white;
+  font-family: "Noto Sans", sans-serif; font-size: 11pt;
+}
+
+#jsLoader {
+  position: fixed; top: 60px; left: 30px; width: 20px; height: 20px; border-radius: 10px;
+  background-color: palevioletred;
+  &.loaded { background-color: darkseagreen; }
+}
+
+.content {
+  width: 1100px; padding-left: 1rem; float: none;
+  margin: 50px auto;
+}
+
+.col-left { width: 300px; }
+.col-right { width: 700px; padding-left: 20px; }
+
+#stroke-canvas { width: auto; }
+
+canvas.stroke-input-canvas {
+  width: 250px; height: 250px;
+  box-sizing: border-box; display: block; position: relative; float: left;
+  background-color: white; cursor: crosshair;
+}
+
+.canvasOptions {
+  padding: 5px 0 0 0;
+  .canvasOption, .canvasCommand {
+    background-color: #f0f0f0; padding: 0 7px; border-radius: 4px; display: inline-block;  margin-bottom: 3px;
+    user-select: none; -webkit-user-select: none; -moz-user-select: none;
+    -khtml-user-select: none; -ms-user-select: none;
+    cursor: default;
+  }
+  .canvasCommand:hover { background-color: #ffdfa4}
+  .canvasOption {
+    &.on, &:hover { 
+      color: white;
+      &.coptShowInput { background-color: #707070; }
+      &.coptShowSubstrokes { background-color: red; }
+      &.coptShowBoundary { background-color: blue; }
+      &.coptShowMedians { background-color: purple; }
+      &.coptShowMedSubs { background-color: green; }
+    }
+  }
+}
+
+#txtChar {
+  font-size: 22pt; margin: 0; padding: 4px; border: none; border-bottom: 1px solid gray; width: 600px;
+}
+.charPicker { font-size: 28pt; padding: 5px 0 0 0; }
+.controlChars { margin-bottom: 10px; }
+.pickable {
+  cursor: default; padding: 0 3px 0 3px;
+  &:hover { background-color: #f5f5fb; }
+  &.selected { background-color: #e8e8f9; }
+}
+
+.lookupTimer {
+  font-size: 8pt; background-color: #f0f0f0; border-radius: 3px; padding: 2px 5px 3px 5px;
+  display: block; position: relative; float: right; margin: 12px 0 0 15px;
+}

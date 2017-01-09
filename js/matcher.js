@@ -1,0 +1,260 @@
+/// <reference path="../lib/jquery-3.1.1.min.js" />
+/// <reference path="analyzedCharacter.js" />
+/// <reference path="characterMatch.js" />
+/// <reference path="matchCollector.js" />
+
+"use strict";
+var HL = HL || {};
+
+// Magic constants
+HL.MAX_CHARACTER_STROKE_COUNT = 48;
+HL.MAX_CHARACTER_SUB_STROKE_COUNT = 64;
+HL.DEFAULT_LOOSENESS = 0.25;
+HL.AVG_SUBSTROKE_LENGTH = 0.33; // an average length (out of 1)
+HL.SKIP_PENALTY_MULTIPLIER = 1.75; // penalty mulitplier for skipping a stroke
+HL.CORRECT_NUM_STROKES_BONUS = 0.1; // max multiplier bonus if characters has the correct number of strokes
+HL.CORRECT_NUM_STROKES_CAP = 10; // characters with more strokes than this will not be multiplied
+
+HL.Matcher = (function (repo, looseness) {
+  // Magic value!
+  var _looseness = looseness || HL.DEFAULT_LOOSENESS;
+  var _repo = repo;
+  var _scoreMatrix = buildScoreMatrix();
+
+  var DIRECTION_SCORE_TABLE;
+  var LENGTH_SCORE_TABLE;
+
+  // Init score tables
+  initScoreTables();
+
+  function doMatch(inputChar, limit) {
+    // This will gather matches
+    var matchCollector = new HL.MatchCollector(limit);
+
+    // Flat format: matching needs this. Only transform once.
+    var inputSubStrokes = [];
+    for (var i = 0; i != inputChar.analyzedStrokes.length; ++i) {
+      var stroke = inputChar.analyzedStrokes[i];
+      for (var j = 0; j != stroke.subStrokes.length; ++j) {
+        inputSubStrokes.push(stroke.subStrokes[j]);
+      }
+    }
+
+    // Some pre-computed looseness magic
+    var strokeCount = inputChar.analyzedStrokes.length;
+    var subStrokeCount = inputChar.subStrokeCount;
+    // Get the range of strokes to compare against based on the loosness.
+    // Characters with fewer strokes than strokeCount - strokeRange
+    // or more than strokeCount + strokeRange won't even be considered.
+    var strokeRange = getStrokesRange(strokeCount);
+    var minimumStrokes = Math.max(strokeCount - strokeRange, 1);
+    var maximumStrokes = Math.min(strokeCount + strokeRange, HL.MAX_CHARACTER_STROKE_COUNT);
+    // Get the range of substrokes to compare against based on looseness.
+    // When trying to match sub stroke patterns, won't compare sub strokes
+    // that are farther about in sequence than this range.  This is to make
+    // computing matches less expensive for low loosenesses.
+    var subStrokesRange = getSubStrokesRange(subStrokeCount);
+    var minSubStrokes = Math.max(subStrokeCount - subStrokesRange, 1);
+    var maxSubStrokes = Math.min(subStrokeCount + subStrokesRange, HL.MAX_CHARACTER_SUB_STROKE_COUNT);
+    // Iterate over all characters in repo
+    for (var cix = 0; cix != _repo.length; ++cix) {
+      var repoChar = _repo[cix];
+      var cmpStrokeCount = repoChar[1];
+      var cmpSubStrokes = repoChar[2];
+      if (cmpStrokeCount < minimumStrokes || cmpStrokeCount > maximumStrokes) continue;
+      if (cmpSubStrokes.length < minSubStrokes || cmpSubStrokes.length > maxSubStrokes) continue;
+      // Match against character in repo
+      // DBG
+      if (repoChar[0] == "士") {
+        var tjrklt = 0;
+      }
+      var match = matchOne(strokeCount, inputSubStrokes, subStrokesRange, repoChar);
+      // File; collector takes care of comparisons and keeping N-best
+      matchCollector.fileMatch(match);
+    }
+    // When done: just return collected matches
+    // This is an array of CharacterMatch objects
+    return matchCollector.getMatches();
+  }
+  
+  function getStrokesRange(strokeCount) {
+    if (_looseness == 0) return 0;
+    if (_looseness == 1) return HL.MAX_CHARACTER_STROKE_COUNT;
+    // We use a CubicCurve that grows slowly at first and then rapidly near the end to the maximum.
+    // This is so a looseness at or near 1.0 will return a range that will consider all characters.
+    var ctrl1X = 0.35;
+    var ctrl1Y = strokeCount * 0.4;
+    var ctrl2X = 0.6;
+    var ctrl2Y = strokeCount;
+    var curve = new HL.CubicCurve2D(0, 0, ctrl1X, ctrl1Y, ctrl2X, ctrl2Y, 1, HL.MAX_CHARACTER_STROKE_COUNT);
+    var t = curve.getFirstSolutionForX(_looseness);
+    // We get the t value on the parametrized curve where the x value matches the looseness.
+    // Then we compute the y value for that t. This gives the range.
+    return Math.round(curve.getYOnCurve(t));
+  }
+  
+  function getSubStrokesRange(subStrokeCount) {
+    // Return the maximum if looseness = 1.0.
+    // Otherwise we'd have to ensure that the floating point value led to exactly the right int count.
+    if (_looseness == 1.0) return HL.MAX_CHARACTER_SUB_STROKE_COUNT;
+    // We use a CubicCurve that grows slowly at first and then rapidly near the end to the maximum.
+    var y0 = subStrokeCount * 0.25;
+    var ctrl1X = 0.4;
+    var ctrl1Y = 1.5 * y0;
+    var ctrl2X = 0.75;
+    var ctrl2Y = 1.5 * ctrl1Y;
+    var curve = new HL.CubicCurve2D(0, y0, ctrl1X, ctrl1Y, ctrl2X, ctrl2Y, 1, HL.MAX_CHARACTER_SUB_STROKE_COUNT);
+    var t = curve.getFirstSolutionForX(_looseness);
+    // We get the t value on the parametrized curve where the x value matches the looseness.
+    // Then we compute the y value for that t. This gives the range.
+    return Math.round(curve.getYOnCurve(t));
+  }
+
+  function buildScoreMatrix() {
+    // We use a dimension + 1 because the first row and column are seed values.
+    var dim = HL.MAX_CHARACTER_SUB_STROKE_COUNT + 1;
+    var res = [];
+    for (var i = 0; i < dim; i++) {
+      res.push([]);
+      for (var j = 0; j < dim; j++) res[i].push(0);
+    }
+    // Seed the first row and column with base values.
+    // Starting from a cell that isn't at 0,0 to skip strokes incurs a penalty.
+    for (var i = 0; i < dim; i++) {
+      var penalty = -HL.AVG_SUBSTROKE_LENGTH * HL.SKIP_PENALTY_MULTIPLIER * i;
+      res[i][0] = penalty;
+      res[0][i] = penalty;
+    }
+    return res;
+  }
+
+  function matchOne(inputStrokeCount, inputSubStrokes, subStrokesRange, repoChar) {
+    // Calculate score. This is the *actual* meat.
+    var score = computeMatchScore(inputStrokeCount, inputSubStrokes, subStrokesRange, repoChar);
+    // If the input character and the character in the repository have the same number of strokes, assign a small bonus.
+    // Might be able to remove this, doesn't really add much, only semi-useful for characters with only a couple strokes.
+    if (inputStrokeCount == repoChar[1] && inputStrokeCount < HL.CORRECT_NUM_STROKES_CAP) {
+      // The bonus declines linearly as the number of strokes increases, writing 2 instead of 3 strokes is worse than 9 for 10.
+      var bonus = HL.CORRECT_NUM_STROKES_BONUS * Math.max(HL.CORRECT_NUM_STROKES_CAP - inputStrokeCount, 0) / HL.CORRECT_NUM_STROKES_CAP;
+      score += bonus * score;
+    }
+    return new HL.CharacterMatch(repoChar[0], score);
+  }
+
+  function computeMatchScore(strokeCount, inputSubStrokes, subStrokesRange, repoChar) {
+    for (var x = 0; x < inputSubStrokes.length; x++) {
+      // For each of the input substrokes...
+      var inputDirection = inputSubStrokes[x].direction;
+      var inputLength = inputSubStrokes[x].length;
+      for (var y = 0; y < repoChar[2].length; y++) {
+        // For each of the compare substrokes...
+        // initialize the score as being not usable, it will only be set to a good
+        // value if the two substrokes are within the range.
+        var newScore = Number.NEGATIVE_INFINITY;
+        if (Math.abs(x - y) <= subStrokesRange)
+        {
+          // The range is based on looseness.  If the two substrokes fall out of the range
+          // then the comparison score for those two substrokes remains Double.MIN_VALUE and will not be used.
+          var compareDirection = repoChar[2][y][0];
+          var compareLength = repoChar[2][y][1];
+          // We incur penalties for skipping substrokes.
+          // Get the scores that would be incurred either for skipping the substroke from the descriptor, or from the repository.
+          var skip1Score = _scoreMatrix[x][y + 1] - (inputLength * HL.SKIP_PENALTY_MULTIPLIER);
+          var skip2Score = _scoreMatrix[x + 1][y] - (compareLength * HL.SKIP_PENALTY_MULTIPLIER);
+          // The skip score is the maximum of the scores that would result from skipping one of the substrokes.
+          var skipScore = Math.max(skip1Score, skip2Score);
+          // The matchScore is the score of actually comparing the two substrokes.
+          var matchScore = computeSubStrokeScore(inputDirection, inputLength, compareDirection, compareLength);
+          // Previous score is the score we'd add to if we compared the two substrokes.
+          var previousScore = _scoreMatrix[x][y];
+          // Result score is the maximum of skipping a substroke, or comparing the two.
+          newScore = Math.max(previousScore + matchScore, skipScore);
+        }
+        // Set the score for comparing the two substrokes.
+        _scoreMatrix[x + 1][y + 1] = newScore;
+      }
+    }
+    // At the end the score is the score at the opposite corner of the matrix...
+    // don't need to use count - 1 since seed values occupy indices 0
+    return _scoreMatrix[inputSubStrokes.length][repoChar[2].length];
+  }
+
+  function computeSubStrokeScore(direction1, length1, direction2, length2) {
+    // Score drops off after directions get sufficiently apart, start to rise again as the substrokes approach opposite directions.
+    // This in particular reflects that occasionally strokes will be written backwards, this isn't totally bad, they get
+    // some score for having the stroke oriented correctly.
+    //double directionScore = Math.max(Math.cos(2.0 * theta), 0.3 * Math.cos((1.5 * theta) + (Math.PI / 3.0)));
+    var directionScore = getDirectionScore(direction1, direction2, length1);
+
+    // Length score gives an indication of how similar the lengths of the substrokes are.
+    // Get the ratio of the smaller of the lengths over the longer of the lengths.
+    var lengthScore = getLengthScore(length1, length2);
+    // Ratios that are within a certain range are fine, but after that they drop off, scores not more than 1.
+    //lengthScore = Math.log(lengthScore + (1.0 / Math.E)) + 1;
+    //lengthScore = Math.min(lengthScore, 1.0);
+
+    // For the final score we just multiple the two scores together.
+    return lengthScore * directionScore;
+  }
+
+  function initScoreTables() {
+    // Builds a precomputed array of values to use when getting the score between two substroke directions.
+    // Two directions should differ by 0 - Pi, and the score should be the (difference / Pi) * score table's length
+    // The curve drops as the difference grows, but rises again some at the end because
+    // a stroke that is 180 degrees from the expected direction maybe OK passable.
+    var dirCurve = new HL.CubicCurve2D(0, 1.0, 0.5, 1.0, 0.25, -2.0, 1.0, 1.0);
+    DIRECTION_SCORE_TABLE = initCubicCurveScoreTable(dirCurve, 100);
+
+    // Builds a precomputed array of values to use when getting the score between two substroke lengths.
+    // A ratio less than one is computed for the two lengths, and the score should be the ratio * score table's length.
+    // Curve grows rapidly as the ratio grows and levels off quickly.
+    // This is because we don't really expect lengths to vary a lot.
+    // We are really just trying to distinguish between tiny strokes and long strokes.
+    var lenCurve = new HL.CubicCurve2D(0, 0, 0.25, 1.0, 0.75, 1.0, 1.0, 1.0);
+    LENGTH_SCORE_TABLE = initCubicCurveScoreTable(lenCurve, 100);
+  }
+
+  function initCubicCurveScoreTable(curve, numSamples) {
+    var x1 = curve.x1();
+    var x2 = curve.x2();
+    var range = x2 - x1;
+    var x = x1;
+    var xInc = range / numSamples;  // even incrementer to increment x value by when sampling across the curve
+    var scoreTable = [];
+    // Sample evenly across the curve and set the samples into the table.
+    for (var i = 0; i < numSamples; i++) {
+      var t = curve.getFirstSolutionForX(Math.min(x, x2));
+      scoreTable.push(curve.getYOnCurve(t));
+      x += xInc;
+    }
+    return scoreTable;
+  }
+
+  function getDirectionScore(direction1, direction2, inputLength) {
+    // Get the difference in direction, less than PI.
+    var theta = Math.abs(direction1 - direction2);
+    if (theta > Math.PI) theta = (2.0 * Math.PI) - theta;
+    // get the score from the table
+    var index = Math.round(theta / Math.PI * (DIRECTION_SCORE_TABLE.length - 1));
+    var directionScore = DIRECTION_SCORE_TABLE[index];
+    // we can give back a bonus if the input length is small.
+    // directions doesn't really matter for small dian-like strokes.
+    var shortLengthBonusMax = Math.min(1.0, 1.0 - directionScore);
+    var shortLengthBonus = shortLengthBonusMax * ((-4.0 * inputLength) + 1.0);
+    if (shortLengthBonus > 0) directionScore += shortLengthBonus;
+    return directionScore;
+  }
+
+  function getLengthScore(length1, length2) {
+    // Get the ratio between the two lengths less than one.
+    var lengthRatio = length1 < length2 ? length1 / length2 : length2 / length1;
+    // Score comes from the table.
+    var index = Math.round(lengthRatio * (LENGTH_SCORE_TABLE.length - 1));
+    var lengthScore = LENGTH_SCORE_TABLE[index];
+    return lengthScore;
+  }
+
+  return {
+    match: function(analyzedChar, limit) { return doMatch(analyzedChar, limit); }
+  };
+});
