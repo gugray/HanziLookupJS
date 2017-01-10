@@ -1,12 +1,12 @@
-﻿using System;
-
-namespace MmahConvert
+﻿namespace MmahConvert
 {
     public class Program
     {
         public static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            Converter conv = new Converter();
+            conv.Parse("../work/graphics.txt");
+            conv.WriteResults("../src/js/x-mmah-medians.js", "../src/js/x-mmah-strokes.js");
         }
     }
 }

@@ -7,31 +7,11 @@ namespace MmahConvert
 {
     public class Converter
     {
-        private struct Point
-        {
-            public int X;
-            public int Y;
-        }
-
-        private class SubStroke
-        {
-            double Dir;
-            double Len;
-            double CenterX;
-            double CenterY;
-        }
-
-        private class Stroke
-        {
-            public List<Point> Points = new List<Point>();
-            public Point Center;
-            public List<SubStroke> SubStrokes = new List<SubStroke>();
-        }
-
         private class Hanzi
         {
             public char Char;
             public List<Stroke> Strokes = new List<Stroke>();
+            public List<SubStroke> SubStrokes = new List<SubStroke>();
         }
 
         private List<Hanzi> data = new List<Hanzi>();
@@ -39,7 +19,6 @@ namespace MmahConvert
         /// <summary>
         /// Parses MMAH graphics.txt and analyzes characters; keeps all data in memory.
         /// </summary>
-        /// <param name="mmahGraphicsFileName"></param>
         public void Parse(string mmahGraphicsFileName)
         {
             using (FileStream fs = new FileStream(mmahGraphicsFileName, FileMode.Open, FileAccess.Read))
@@ -50,6 +29,13 @@ namespace MmahConvert
                 {
                     Hanzi hanzi = parseCharacter(line);
                     normalize(hanzi);
+                    // DBG
+                    if (hanzi.Char == '一')
+                    {
+                        int jfkdlsf = 0;
+                    }
+                    Analyzer a = new Analyzer(hanzi.Strokes);
+                    hanzi.SubStrokes = a.AnalyzedStrokes;
                     data.Add(hanzi);
                 }
             }
@@ -82,7 +68,6 @@ namespace MmahConvert
 
         /// <summary>
         /// Converts coordinates to sane top-down system; 250x250 canvas.
-        /// Calculates substrokes with normalized values.
         /// </summary>
         private static void normalize(Hanzi hanzi)
         {
@@ -111,12 +96,60 @@ namespace MmahConvert
         /// <param name="strokesFileName">Analyzed substrokes for character recognition.</param>
         public void WriteResults(string mediansFileName, string strokesFileName)
         {
-            using (FileStream fs = new FileStream("x-mmah-medians.js", FileMode.Create, FileAccess.ReadWrite))
+            writeMedians(mediansFileName);
+            writeStrokes(strokesFileName);
+        }
+
+        private static string writeSubStroke(SubStroke ss)
+        {
+            string res = "";
+            res += Math.Round(ss.Dir, 2).ToString() + ",";
+            res += Math.Round(ss.Len, 2).ToString() + ",";
+            res += Math.Round(ss.CenterX, 2).ToString() + ",";
+            res += Math.Round(ss.CenterY, 2).ToString();
+            return res;
+        }
+
+        private void writeStrokes(string strokesFileName)
+        {
+            using (FileStream fs = new FileStream(strokesFileName, FileMode.Create, FileAccess.ReadWrite))
             using (StreamWriter sw = new StreamWriter(fs))
             {
                 sw.WriteLine("\"use strict\";");
                 sw.WriteLine("var HL = HL || { };");
-                sw.WriteLine("HL.StrokeDataHL = [");
+                sw.WriteLine("HL.StrokeDataMMAH = [");
+
+                foreach (Hanzi hanzi in data)
+                {
+                    string line = "[\"" + hanzi.Char + "\"," + hanzi.Strokes.Count + ",[";
+
+                    for (int i = 0; i != hanzi.SubStrokes.Count; ++i)
+                    {
+                        SubStroke ss = hanzi.SubStrokes[i];
+                        if (i != 0) line += ",";
+                        // Each substroke is an array of four values
+                        // Dir, Len, CenterX, CenterY
+                        line += "[";
+                        line += writeSubStroke(ss);
+                        line += "]";
+                    }
+
+                    line += "]],";
+                    sw.WriteLine(line);
+                }
+
+                sw.WriteLine("];");
+            }
+        }
+
+        private void writeMedians(string mediansFileName)
+        {
+            using (FileStream fs = new FileStream(mediansFileName, FileMode.Create, FileAccess.ReadWrite))
+            using (StreamWriter sw = new StreamWriter(fs))
+            {
+                sw.WriteLine("\"use strict\";");
+                sw.WriteLine("var HL = HL || { };");
+                sw.WriteLine("HL.MediansMMAH = [");
 
                 foreach (Hanzi hanzi in data)
                 {

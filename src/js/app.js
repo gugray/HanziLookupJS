@@ -28,18 +28,22 @@ var HanziLookupApp = (function() {
   });
 
   function initJSLoader() {
-    _scriptsToLoad = 2;
+    _scriptsToLoad = 3;
     var script1 = document.createElement('script');
     script1.src = "./js/x-hl-strokes.js";
-    script1.onload = function () { onScriptLoaded(); }
+    script1.onload = function (e) { onScriptLoaded(e); }
     document.head.appendChild(script1);
     var script2 = document.createElement('script');
     script2.src = "./js/x-mmah-medians.js";
-    script2.onload = function () { onScriptLoaded(); }
+    script2.onload = function (e) { onScriptLoaded(e); }
     document.head.appendChild(script2);
+    var script3 = document.createElement('script');
+    script3.src = "./js/x-mmah-strokes.js";
+    script3.onload = function (e) { onScriptLoaded(e); }
+    document.head.appendChild(script3);
   }
 
-  function onScriptLoaded () {
+  function onScriptLoaded (e) {
     --_scriptsToLoad;
     if (_scriptsToLoad == 0) {
       $("#jsLoader").addClass("loaded");
@@ -102,6 +106,8 @@ var HanziLookupApp = (function() {
       updateCanvas();
       $(".lookupTimerHL").text("--");
       $(".hanziLookupChars").html("");
+      $(".lookupTimerMMAH").text("--");
+      $(".mmahLookupChars").html("");
     });
 
     // Options
@@ -178,12 +184,20 @@ var HanziLookupApp = (function() {
   }
 
   function lookup(analyzedChar) {
+    // Vanilla HanziLookup
     var tsStart = new Date().getTime();
     var matcher = new HL.Matcher(HL.StrokeDataHL);
     var matches = matcher.match(analyzedChar, 15);
     var elapsed = new Date().getTime() - tsStart;
     updateResultChars($(".hanziLookupChars"), matches);
     $(".lookupTimerHL").text(elapsed + "ms");
+    // MMAH data
+    tsStart = new Date().getTime();
+    matcher = new HL.Matcher(HL.StrokeDataMMAH);
+    matches = matcher.match(analyzedChar, 15);
+    elapsed = new Date().getTime() - tsStart;
+    updateResultChars($(".mmahLookupChars"), matches);
+    $(".lookupTimerMMAH").text(elapsed + "ms");
   }
 
   function strokeFinished() {
