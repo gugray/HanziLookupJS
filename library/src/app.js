@@ -30,15 +30,15 @@ var HanziLookupApp = (function() {
   function initJSLoader() {
     _scriptsToLoad = 3;
     var script1 = document.createElement('script');
-    script1.src = "./js/x-hl-strokes.js";
+    script1.src = "./src/x-hl-strokes.js";
     script1.onload = function (e) { onScriptLoaded(e); }
     document.head.appendChild(script1);
     var script2 = document.createElement('script');
-    script2.src = "./js/x-mmah-medians.js";
+    script2.src = "./src/x-mmah-medians.js";
     script2.onload = function (e) { onScriptLoaded(e); }
     document.head.appendChild(script2);
     var script3 = document.createElement('script');
-    script3.src = "./js/x-mmah-strokes.js";
+    script3.src = "./src/x-mmah-strokes.js";
     script3.onload = function (e) { onScriptLoaded(e); }
     document.head.appendChild(script3);
   }

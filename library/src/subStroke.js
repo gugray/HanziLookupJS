@@ -3,7 +3,9 @@
 "use strict";
 var HL = HL || {};
 
-HL.SubStroke = (function(direction, length) {
+HL.SubStroke = (function(direction, length, centerX, centerY) {
   this.direction = direction;
   this.length = length;
+  this.centerX = centerX;
+  this.centerY = centerY;
 });

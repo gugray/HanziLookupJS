@@ -29,11 +29,6 @@ namespace MmahConvert
                 {
                     Hanzi hanzi = parseCharacter(line);
                     normalize(hanzi);
-                    // DBG
-                    if (hanzi.Char == '一')
-                    {
-                        int jfkdlsf = 0;
-                    }
                     Analyzer a = new Analyzer(hanzi.Strokes);
                     hanzi.SubStrokes = a.AnalyzedStrokes;
                     data.Add(hanzi);

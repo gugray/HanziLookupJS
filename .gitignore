@@ -3,4 +3,4 @@
 node_modules
 work
 **/project.lock.json
-src/style/*.css
+library/style/*.css

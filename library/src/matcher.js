@@ -146,6 +146,7 @@ HL.Matcher = (function (repo, looseness) {
       // For each of the input substrokes...
       var inputDirection = inputSubStrokes[x].direction;
       var inputLength = inputSubStrokes[x].length;
+      var inputCenter = [inputSubStrokes[x].centerX, inputSubStrokes[x].centerY];
       for (var y = 0; y < repoChar[2].length; y++) {
         // For each of the compare substrokes...
         // initialize the score as being not usable, it will only be set to a good
@@ -157,6 +158,8 @@ HL.Matcher = (function (repo, looseness) {
           // then the comparison score for those two substrokes remains Double.MIN_VALUE and will not be used.
           var compareDirection = repoChar[2][y][0];
           var compareLength = repoChar[2][y][1];
+          var compareCenter = null;
+          if (repoChar[2][y].length > 2) compareCenter = [repoChar[2][y][2], repoChar[2][y][3]];
           // We incur penalties for skipping substrokes.
           // Get the scores that would be incurred either for skipping the substroke from the descriptor, or from the repository.
           var skip1Score = _scoreMatrix[x][y + 1] - (inputLength * HL.SKIP_PENALTY_MULTIPLIER);
@@ -164,7 +167,7 @@ HL.Matcher = (function (repo, looseness) {
           // The skip score is the maximum of the scores that would result from skipping one of the substrokes.
           var skipScore = Math.max(skip1Score, skip2Score);
           // The matchScore is the score of actually comparing the two substrokes.
-          var matchScore = computeSubStrokeScore(inputDirection, inputLength, compareDirection, compareLength);
+          var matchScore = computeSubStrokeScore(inputDirection, inputLength, compareDirection, compareLength, inputCenter, compareCenter);
           // Previous score is the score we'd add to if we compared the two substrokes.
           var previousScore = _scoreMatrix[x][y];
           // Result score is the maximum of skipping a substroke, or comparing the two.
@@ -179,22 +182,35 @@ HL.Matcher = (function (repo, looseness) {
     return _scoreMatrix[inputSubStrokes.length][repoChar[2].length];
   }
 
-  function computeSubStrokeScore(direction1, length1, direction2, length2) {
+  function computeSubStrokeScore(inputDir, inputLen, repoDir, repoLen, inputCenter, repoCenter) {
     // Score drops off after directions get sufficiently apart, start to rise again as the substrokes approach opposite directions.
     // This in particular reflects that occasionally strokes will be written backwards, this isn't totally bad, they get
     // some score for having the stroke oriented correctly.
-    //double directionScore = Math.max(Math.cos(2.0 * theta), 0.3 * Math.cos((1.5 * theta) + (Math.PI / 3.0)));
-    var directionScore = getDirectionScore(direction1, direction2, length1);
+    var directionScore = getDirectionScore(inputDir, repoDir, inputLen);
+    //var directionScore = Math.max(Math.cos(2.0 * theta), 0.3 * Math.cos((1.5 * theta) + (Math.PI / 3.0)));
 
     // Length score gives an indication of how similar the lengths of the substrokes are.
     // Get the ratio of the smaller of the lengths over the longer of the lengths.
-    var lengthScore = getLengthScore(length1, length2);
+    var lengthScore = getLengthScore(inputLen, repoLen);
     // Ratios that are within a certain range are fine, but after that they drop off, scores not more than 1.
-    //lengthScore = Math.log(lengthScore + (1.0 / Math.E)) + 1;
+    //var lengthScore = Math.log(lengthScore + (1.0 / Math.E)) + 1;
     //lengthScore = Math.min(lengthScore, 1.0);
 
-    // For the final score we just multiple the two scores together.
-    return lengthScore * directionScore;
+    // For the final "classic" score we just multiply the two scores together.
+    var score = lengthScore * directionScore;
+
+    // If we have center points (from MMAH data), reduce score if strokes are farther apart
+    if (repoCenter) {
+      var dx = inputCenter[0] - repoCenter[0];
+      var dy = inputCenter[1] - repoCenter[1];
+      var dist = Math.sqrt(dx * dx + dy * dy);
+      // TO-DO: a cubic function for this too
+      var closeness = 1 - dist;
+      // Closeness is always [0..1]. We reduce positive score, and make negative more negative.
+      if (score > 0) score *= closeness;
+      else score /= closeness;
+    }
+    return score;
   }
 
   function initScoreTables() {

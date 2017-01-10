@@ -157,6 +157,27 @@ HL.AnalyzedCharacter = (function (rawStrokes) {
     return res;
   }
 
+  function getNormCenter(a, b) {
+    var x = (a[0] + b[0]) / 2;
+    var y = (a[1] + b[1]) / 2;
+    var side;
+    // Bounding rect is landscape
+    if (_right - _left > _bottom - _top) {
+      side = _right - _left;
+      var height = _bottom - _top;
+      x = x - _left;
+      y = y - _top + (side - height) / 2;
+    }
+    // Portrait
+    else {
+      side = _bottom - _top;
+      var width = _right - _left;
+      x = x - _left + (side - width) / 2;
+      y = y - _top;
+    }
+    return [x / side, y / side];
+  }
+
   // Builds array of substrokes from stroke's points, pivots, and character's bounding rectangle
   function buildSubStrokes(points, pivotIndexes) {
     var res = [];
@@ -166,7 +187,8 @@ HL.AnalyzedCharacter = (function (rawStrokes) {
       if (ix == prevIx) continue;
       var direction = dir(points[prevIx], points[ix]);
       var normLength = normDist(points[prevIx], points[ix]);
-      res.push(new HL.SubStroke(direction, normLength));
+      var center = getNormCenter(points[prevIx], points[ix]);
+      res.push(new HL.SubStroke(direction, normLength, center[0], center[1]));
       prevIx = ix;
     }
     return res;
