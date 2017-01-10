@@ -1,2 +1,5 @@
+**/bin
+**/obj
 node_modules
-style/*.css
+**/project.lock.json
+src/style/*.css
