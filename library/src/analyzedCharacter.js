@@ -3,9 +3,9 @@
 /// <reference path="subStroke.js" />
 
 "use strict";
-var HL = HL || {};
+var HanziLookup = HanziLookup || {};
 
-HL.AnalyzedCharacter = (function (rawStrokes) {
+HanziLookup.AnalyzedCharacter = (function (rawStrokes) {
   // Magic constants used in decomposition of a stroke into substrokes
   var MIN_SEGMENT_LENGTH = 12.5;
   var MAX_LOCAL_LENGTH_RATIO = 1.1;
@@ -188,7 +188,7 @@ HL.AnalyzedCharacter = (function (rawStrokes) {
       var direction = dir(points[prevIx], points[ix]);
       var normLength = normDist(points[prevIx], points[ix]);
       var center = getNormCenter(points[prevIx], points[ix]);
-      res.push(new HL.SubStroke(direction, normLength, center[0], center[1]));
+      res.push(new HanziLookup.SubStroke(direction, normLength, center[0], center[1]));
       prevIx = ix;
     }
     return res;
@@ -204,7 +204,7 @@ HL.AnalyzedCharacter = (function (rawStrokes) {
       var subStrokes = buildSubStrokes(rawStrokes[i], pivotIndexes);
       _subStrokeCount += subStrokes.length;
       // Store all this
-      _analyzedStrokes.push(new HL.AnalyzedStroke(rawStrokes[i], pivotIndexes, subStrokes));
+      _analyzedStrokes.push(new HanziLookup.AnalyzedStroke(rawStrokes[i], pivotIndexes, subStrokes));
     }
   }
 

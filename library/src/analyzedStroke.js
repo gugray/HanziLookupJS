@@ -2,9 +2,9 @@
 /// <reference path="subStroke.js" />
 
 "use strict";
-var HL = HL || {};
+var HanziLookup = HanziLookup || {};
 
-HL.AnalyzedStroke = (function(points, pivotIndexes, subStrokes) {
+HanziLookup.AnalyzedStroke = (function(points, pivotIndexes, subStrokes) {
   this.points = points;
   this.pivotIndexes = pivotIndexes;
   this.subStrokes = subStrokes;

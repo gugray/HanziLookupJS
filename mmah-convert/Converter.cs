@@ -111,8 +111,8 @@ namespace MmahConvert
             using (StreamWriter sw = new StreamWriter(fs))
             {
                 sw.WriteLine("\"use strict\";");
-                sw.WriteLine("var HL = HL || { };");
-                sw.WriteLine("HL.StrokeDataMMAH = [");
+                sw.WriteLine("var HanziLookup = HanziLookup || { };");
+                sw.WriteLine("HanziLookup.StrokeDataMMAH = [");
 
                 foreach (Hanzi hanzi in data)
                 {
@@ -143,8 +143,8 @@ namespace MmahConvert
             using (StreamWriter sw = new StreamWriter(fs))
             {
                 sw.WriteLine("\"use strict\";");
-                sw.WriteLine("var HL = HL || { };");
-                sw.WriteLine("HL.MediansMMAH = [");
+                sw.WriteLine("var HanziLookup = HanziLookup || { };");
+                sw.WriteLine("HanziLookupHL.MediansMMAH = [");
 
                 foreach (Hanzi hanzi in data)
                 {

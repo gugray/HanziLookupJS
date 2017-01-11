@@ -1,15 +1,15 @@
 /// <reference path="../lib/jquery-3.1.1.min.js" />
-/// <reference path="strokeInput.js" />
+/// <reference path="drawingBoard.js" />
 /// <reference path="analyzedCharacter.js" />
 /// <reference path="analyzedStroke.js" />
 /// <reference path="strokeInputOverlay.js" />
 /// <reference path="subStroke.js" />
 
 "use strict";
-var HL = HL || {};
+var HanziLookup = HanziLookup || {};
 
 var HanziLookupApp = (function() {
-  var _strokeInput;
+  var _drawingBoard;
   var _scriptsToLoad = -1;
 
   var _coptShowInput = !(localStorage.getItem("coptShowInput") == "no");
@@ -21,7 +21,7 @@ var HanziLookupApp = (function() {
   var _ctrlChar = null;
 
   $(document).ready(function () {
-    _strokeInput = HL.StrokeInput($("#stroke-canvas").first(), strokeFinished);
+    _drawingBoard = HanziLookup.DrawingBoard($("#stroke-canvas").first(), strokeFinished);
     initJSLoader();
     initCanvasCommands();
     initControlCharacters();
@@ -97,12 +97,12 @@ var HanziLookupApp = (function() {
   function initCanvasCommands() {
     // Actual commands
     $(".ccmdUndo").click(function(evt) {
-      _strokeInput.undoStroke();
+      _drawingBoard.undoStroke();
       updateCanvas();
       strokeFinished();
     });
     $(".ccmdClear").click(function() {
-      _strokeInput.clearCanvas();
+      _drawingBoard.clearCanvas();
       updateCanvas();
       $(".lookupTimerHL").text("--");
       $(".hanziLookupChars").html("");
@@ -186,14 +186,14 @@ var HanziLookupApp = (function() {
   function lookup(analyzedChar) {
     // Vanilla HanziLookup
     var tsStart = new Date().getTime();
-    var matcher = new HL.Matcher(HL.StrokeDataHL);
+    var matcher = new HanziLookup.Matcher(HanziLookup.StrokeDataHL);
     var matches = matcher.match(analyzedChar, 15);
     var elapsed = new Date().getTime() - tsStart;
     updateResultChars($(".hanziLookupChars"), matches);
     $(".lookupTimerHL").text(elapsed + "ms");
     // MMAH data
     tsStart = new Date().getTime();
-    matcher = new HL.Matcher(HL.StrokeDataMMAH);
+    matcher = new HanziLookup.Matcher(HanziLookup.StrokeDataMMAH);
     matches = matcher.match(analyzedChar, 15);
     elapsed = new Date().getTime() - tsStart;
     updateResultChars($(".mmahLookupChars"), matches);
@@ -212,7 +212,7 @@ var HanziLookupApp = (function() {
 
   function updateCanvas() {
     // Analyze raw strokes
-    var ac = new HL.AnalyzedCharacter(_strokeInput.cloneStrokes());
+    var ac = new HanziLookup.AnalyzedCharacter(_drawingBoard.cloneStrokes());
     // Fetch "skeleton" strokes for analysis overlay
     var xstrokes = [];
     for (var i = 0; i != ac.analyzedStrokes.length; ++i) {
@@ -225,8 +225,8 @@ var HanziLookupApp = (function() {
     }
     // Get control character's medians, if requested and available
     var ystrokes = [];
-    for (var i = 0; i != HL.MediansMMAH.length; ++i) {
-      var itm = HL.MediansMMAH[i];
+    for (var i = 0; i != HanziLookup.MediansMMAH.length; ++i) {
+      var itm = HanziLookup.MediansMMAH[i];
       if (itm[0] == _ctrlChar) {
         ystrokes = itm[1];
       }
@@ -236,7 +236,7 @@ var HanziLookupApp = (function() {
     var zstrokes = null;
     if (ystrokes && _coptShowMedSubs) {
       zstrokes = [];
-      var acz = new HL.AnalyzedCharacter(ystrokes);
+      var acz = new HanziLookup.AnalyzedCharacter(ystrokes);
       for (var i = 0; i != acz.analyzedStrokes.length; ++i) {
         var as = acz.analyzedStrokes[i];
         var points = [];
@@ -246,8 +246,8 @@ var HanziLookupApp = (function() {
         zstrokes.push(points);
       }
     }
-    var sio = new HL.StrokeInputOverlay(ac.top, ac.right, ac.bottom, ac.left, xstrokes, ystrokes, zstrokes);
-    _strokeInput.enrich(sio, _coptShowSubstrokes, _coptShowBoundary, _coptShowMedians);
+    var sio = new HanziLookup.StrokeInputOverlay(ac.top, ac.right, ac.bottom, ac.left, xstrokes, ystrokes, zstrokes);
+    _drawingBoard.enrich(sio, _coptShowSubstrokes, _coptShowBoundary, _coptShowMedians);
     // Analyzed char is our courtesty to the caller
     return ac;
   }

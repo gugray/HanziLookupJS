@@ -2,9 +2,9 @@
 /// <reference path="analyzedCharacter.js" />
 
 "use strict";
-var HL = HL || {};
+var HanziLookup = HanziLookup || {};
 
-HL.MatchCollector = (function (limit) {
+HanziLookup.MatchCollector = (function (limit) {
   var _limit = limit;
   var _matches = [];
 

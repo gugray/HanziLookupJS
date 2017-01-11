@@ -1,6 +1,6 @@
 "use strict";
-var HL = HL || {};
-HL.StrokeDataHL = [
+var HanziLookup = HanziLookup || {};
+HanziLookup.StrokeDataHL = [
 ["一",1,[[6.27,0.71]]],
 ["乙",1,[[0.05,0.49],[4.15,0.82],[6.26,0.65],[1.71,0.15]]],
 ["乚",1,[[4.82,0.67],[0.02,0.17],[1.82,0.09]]],

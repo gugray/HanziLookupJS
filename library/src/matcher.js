@@ -4,20 +4,20 @@
 /// <reference path="matchCollector.js" />
 
 "use strict";
-var HL = HL || {};
+var HanziLookup = HanziLookup || {};
 
 // Magic constants
-HL.MAX_CHARACTER_STROKE_COUNT = 48;
-HL.MAX_CHARACTER_SUB_STROKE_COUNT = 64;
-HL.DEFAULT_LOOSENESS = 0.25;
-HL.AVG_SUBSTROKE_LENGTH = 0.33; // an average length (out of 1)
-HL.SKIP_PENALTY_MULTIPLIER = 1.75; // penalty mulitplier for skipping a stroke
-HL.CORRECT_NUM_STROKES_BONUS = 0.1; // max multiplier bonus if characters has the correct number of strokes
-HL.CORRECT_NUM_STROKES_CAP = 10; // characters with more strokes than this will not be multiplied
+HanziLookup.MAX_CHARACTER_STROKE_COUNT = 48;
+HanziLookup.MAX_CHARACTER_SUB_STROKE_COUNT = 64;
+HanziLookup.DEFAULT_LOOSENESS = 0.25;
+HanziLookup.AVG_SUBSTROKE_LENGTH = 0.33; // an average length (out of 1)
+HanziLookup.SKIP_PENALTY_MULTIPLIER = 1.75; // penalty mulitplier for skipping a stroke
+HanziLookup.CORRECT_NUM_STROKES_BONUS = 0.1; // max multiplier bonus if characters has the correct number of strokes
+HanziLookup.CORRECT_NUM_STROKES_CAP = 10; // characters with more strokes than this will not be multiplied
 
-HL.Matcher = (function (repo, looseness) {
+HanziLookup.Matcher = (function (repo, looseness) {
   // Magic value!
-  var _looseness = looseness || HL.DEFAULT_LOOSENESS;
+  var _looseness = looseness || HanziLookup.DEFAULT_LOOSENESS;
   var _repo = repo;
   var _scoreMatrix = buildScoreMatrix();
 
@@ -29,7 +29,11 @@ HL.Matcher = (function (repo, looseness) {
 
   function doMatch(inputChar, limit) {
     // This will gather matches
-    var matchCollector = new HL.MatchCollector(limit);
+    var matchCollector = new HanziLookup.MatchCollector(limit);
+
+    // Edge case: empty input should return no matches; but permissive lookup does find a few...
+    if (inputChar.analyzedStrokes.length == 0)
+      return matchCollector.getMatches();
 
     // Flat format: matching needs this. Only transform once.
     var inputSubStrokes = [];
@@ -48,14 +52,14 @@ HL.Matcher = (function (repo, looseness) {
     // or more than strokeCount + strokeRange won't even be considered.
     var strokeRange = getStrokesRange(strokeCount);
     var minimumStrokes = Math.max(strokeCount - strokeRange, 1);
-    var maximumStrokes = Math.min(strokeCount + strokeRange, HL.MAX_CHARACTER_STROKE_COUNT);
+    var maximumStrokes = Math.min(strokeCount + strokeRange, HanziLookup.MAX_CHARACTER_STROKE_COUNT);
     // Get the range of substrokes to compare against based on looseness.
     // When trying to match sub stroke patterns, won't compare sub strokes
     // that are farther about in sequence than this range.  This is to make
     // computing matches less expensive for low loosenesses.
     var subStrokesRange = getSubStrokesRange(subStrokeCount);
     var minSubStrokes = Math.max(subStrokeCount - subStrokesRange, 1);
-    var maxSubStrokes = Math.min(subStrokeCount + subStrokesRange, HL.MAX_CHARACTER_SUB_STROKE_COUNT);
+    var maxSubStrokes = Math.min(subStrokeCount + subStrokesRange, HanziLookup.MAX_CHARACTER_SUB_STROKE_COUNT);
     // Iterate over all characters in repo
     for (var cix = 0; cix != _repo.length; ++cix) {
       var repoChar = _repo[cix];
@@ -79,14 +83,14 @@ HL.Matcher = (function (repo, looseness) {
   
   function getStrokesRange(strokeCount) {
     if (_looseness == 0) return 0;
-    if (_looseness == 1) return HL.MAX_CHARACTER_STROKE_COUNT;
+    if (_looseness == 1) return HanziLookup.MAX_CHARACTER_STROKE_COUNT;
     // We use a CubicCurve that grows slowly at first and then rapidly near the end to the maximum.
     // This is so a looseness at or near 1.0 will return a range that will consider all characters.
     var ctrl1X = 0.35;
     var ctrl1Y = strokeCount * 0.4;
     var ctrl2X = 0.6;
     var ctrl2Y = strokeCount;
-    var curve = new HL.CubicCurve2D(0, 0, ctrl1X, ctrl1Y, ctrl2X, ctrl2Y, 1, HL.MAX_CHARACTER_STROKE_COUNT);
+    var curve = new HanziLookup.CubicCurve2D(0, 0, ctrl1X, ctrl1Y, ctrl2X, ctrl2Y, 1, HanziLookup.MAX_CHARACTER_STROKE_COUNT);
     var t = curve.getFirstSolutionForX(_looseness);
     // We get the t value on the parametrized curve where the x value matches the looseness.
     // Then we compute the y value for that t. This gives the range.
@@ -96,14 +100,14 @@ HL.Matcher = (function (repo, looseness) {
   function getSubStrokesRange(subStrokeCount) {
     // Return the maximum if looseness = 1.0.
     // Otherwise we'd have to ensure that the floating point value led to exactly the right int count.
-    if (_looseness == 1.0) return HL.MAX_CHARACTER_SUB_STROKE_COUNT;
+    if (_looseness == 1.0) return HanziLookup.MAX_CHARACTER_SUB_STROKE_COUNT;
     // We use a CubicCurve that grows slowly at first and then rapidly near the end to the maximum.
     var y0 = subStrokeCount * 0.25;
     var ctrl1X = 0.4;
     var ctrl1Y = 1.5 * y0;
     var ctrl2X = 0.75;
     var ctrl2Y = 1.5 * ctrl1Y;
-    var curve = new HL.CubicCurve2D(0, y0, ctrl1X, ctrl1Y, ctrl2X, ctrl2Y, 1, HL.MAX_CHARACTER_SUB_STROKE_COUNT);
+    var curve = new HanziLookup.CubicCurve2D(0, y0, ctrl1X, ctrl1Y, ctrl2X, ctrl2Y, 1, HanziLookup.MAX_CHARACTER_SUB_STROKE_COUNT);
     var t = curve.getFirstSolutionForX(_looseness);
     // We get the t value on the parametrized curve where the x value matches the looseness.
     // Then we compute the y value for that t. This gives the range.
@@ -112,7 +116,7 @@ HL.Matcher = (function (repo, looseness) {
 
   function buildScoreMatrix() {
     // We use a dimension + 1 because the first row and column are seed values.
-    var dim = HL.MAX_CHARACTER_SUB_STROKE_COUNT + 1;
+    var dim = HanziLookup.MAX_CHARACTER_SUB_STROKE_COUNT + 1;
     var res = [];
     for (var i = 0; i < dim; i++) {
       res.push([]);
@@ -121,7 +125,7 @@ HL.Matcher = (function (repo, looseness) {
     // Seed the first row and column with base values.
     // Starting from a cell that isn't at 0,0 to skip strokes incurs a penalty.
     for (var i = 0; i < dim; i++) {
-      var penalty = -HL.AVG_SUBSTROKE_LENGTH * HL.SKIP_PENALTY_MULTIPLIER * i;
+      var penalty = -HanziLookup.AVG_SUBSTROKE_LENGTH * HanziLookup.SKIP_PENALTY_MULTIPLIER * i;
       res[i][0] = penalty;
       res[0][i] = penalty;
     }
@@ -133,12 +137,12 @@ HL.Matcher = (function (repo, looseness) {
     var score = computeMatchScore(inputStrokeCount, inputSubStrokes, subStrokesRange, repoChar);
     // If the input character and the character in the repository have the same number of strokes, assign a small bonus.
     // Might be able to remove this, doesn't really add much, only semi-useful for characters with only a couple strokes.
-    if (inputStrokeCount == repoChar[1] && inputStrokeCount < HL.CORRECT_NUM_STROKES_CAP) {
+    if (inputStrokeCount == repoChar[1] && inputStrokeCount < HanziLookup.CORRECT_NUM_STROKES_CAP) {
       // The bonus declines linearly as the number of strokes increases, writing 2 instead of 3 strokes is worse than 9 for 10.
-      var bonus = HL.CORRECT_NUM_STROKES_BONUS * Math.max(HL.CORRECT_NUM_STROKES_CAP - inputStrokeCount, 0) / HL.CORRECT_NUM_STROKES_CAP;
+      var bonus = HanziLookup.CORRECT_NUM_STROKES_BONUS * Math.max(HanziLookup.CORRECT_NUM_STROKES_CAP - inputStrokeCount, 0) / HanziLookup.CORRECT_NUM_STROKES_CAP;
       score += bonus * score;
     }
-    return new HL.CharacterMatch(repoChar[0], score);
+    return new HanziLookup.CharacterMatch(repoChar[0], score);
   }
 
   function computeMatchScore(strokeCount, inputSubStrokes, subStrokesRange, repoChar) {
@@ -162,8 +166,8 @@ HL.Matcher = (function (repo, looseness) {
           if (repoChar[2][y].length > 2) compareCenter = [repoChar[2][y][2], repoChar[2][y][3]];
           // We incur penalties for skipping substrokes.
           // Get the scores that would be incurred either for skipping the substroke from the descriptor, or from the repository.
-          var skip1Score = _scoreMatrix[x][y + 1] - (inputLength * HL.SKIP_PENALTY_MULTIPLIER);
-          var skip2Score = _scoreMatrix[x + 1][y] - (compareLength * HL.SKIP_PENALTY_MULTIPLIER);
+          var skip1Score = _scoreMatrix[x][y + 1] - (inputLength * HanziLookup.SKIP_PENALTY_MULTIPLIER);
+          var skip2Score = _scoreMatrix[x + 1][y] - (compareLength * HanziLookup.SKIP_PENALTY_MULTIPLIER);
           // The skip score is the maximum of the scores that would result from skipping one of the substrokes.
           var skipScore = Math.max(skip1Score, skip2Score);
           // The matchScore is the score of actually comparing the two substrokes.
@@ -218,7 +222,7 @@ HL.Matcher = (function (repo, looseness) {
     // Two directions should differ by 0 - Pi, and the score should be the (difference / Pi) * score table's length
     // The curve drops as the difference grows, but rises again some at the end because
     // a stroke that is 180 degrees from the expected direction maybe OK passable.
-    var dirCurve = new HL.CubicCurve2D(0, 1.0, 0.5, 1.0, 0.25, -2.0, 1.0, 1.0);
+    var dirCurve = new HanziLookup.CubicCurve2D(0, 1.0, 0.5, 1.0, 0.25, -2.0, 1.0, 1.0);
     DIRECTION_SCORE_TABLE = initCubicCurveScoreTable(dirCurve, 100);
 
     // Builds a precomputed array of values to use when getting the score between two substroke lengths.
@@ -226,7 +230,7 @@ HL.Matcher = (function (repo, looseness) {
     // Curve grows rapidly as the ratio grows and levels off quickly.
     // This is because we don't really expect lengths to vary a lot.
     // We are really just trying to distinguish between tiny strokes and long strokes.
-    var lenCurve = new HL.CubicCurve2D(0, 0, 0.25, 1.0, 0.75, 1.0, 1.0, 1.0);
+    var lenCurve = new HanziLookup.CubicCurve2D(0, 0, 0.25, 1.0, 0.75, 1.0, 1.0, 1.0);
     LENGTH_SCORE_TABLE = initCubicCurveScoreTable(lenCurve, 100);
   }
 

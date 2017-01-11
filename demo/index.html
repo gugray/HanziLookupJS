@@ -1,0 +1,115 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>HanziLookupJS demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body { background-color: #fafafa; font-family: sans-serif; padding-top: 70px; }
+    div, h1, h2 { position: relative; float: left; box-sizing: border-box; height: auto; overflow: auto; width: 100%; }
+    .content { width: 810px; margin: 0 auto; float: none; background-color: #fdf3e6; padding: 20px; }
+    .colLeft { width: 270px; }
+    .colRight { width: 500px; }
+    .drawingBoard { width: 250px; height: 250px; cursor: crosshair; clear: both; overflow: hidden; background-color: #fafafa; }
+    .drawingBoard span { display: none; }
+    .drawingBoard.loading { background-color: #f0f0f0; }
+    .drawingBoard.loading span { display: inline; }
+    .commands { width: 250px; margin-top: 3px; }
+    .cmd { width: 122px; background-color: #ededf8; text-align: center; cursor: default; padding: 3px; }
+    .cmd.cmdUndo { float: right; }
+    .cmd:hover { background-color: lavender; }
+    .charPicker { border: 1px solid #a0a0a0; padding: 3px; height: 70px; width: 400px; font-size: 48px; background-color: #fafafa; overflow: hidden; }
+    .charPicker span { cursor: default; }
+    .charPicker span:hover { background-color: lavender; }
+  </style>
+</head>
+<body>
+  <div class="content">
+    <div class="colLeft">
+      <h1>Stroke input</h1>
+      <div class="drawingBoard loading"><span>Loading...</span></div>
+      <div class="commands">
+        <div class="cmd cmdUndo">Undo</div>
+        <div class="cmd cmdClear">Clear</div><br/>
+      </div>
+    </div>
+    <div class="colRight">
+      <h1>Recognized characters</h1>
+      <h2>Original HanziLookup data</h2>
+      <div class="charPicker hanziLookupChars"></div>
+      <h2>Make Me a Hanzi data</h2>
+      <div class="charPicker mmahLookupChars"></div>
+    </div>  
+  </div>
+
+  <script src="../library/lib/jquery-3.1.1.min.js"></script>
+  <script src="../dist/hanzilookup.min.js"></script>
+  <script>
+    var hanziLookupDemoApp = (function () {
+      var _scriptsToLoad;
+      var _drawingBoard;
+
+      $(document).ready(function () {
+        // Only fetch data (large, takes long) when the page has loaded
+        loadDataScripts();
+      });
+
+      // Loads JS files with character data asynchronously
+      function loadDataScripts() {
+        _scriptsToLoad = 2;
+        var script1 = document.createElement('script');
+        script1.src = "../dist/x-hl-strokes.js";
+        script1.onload = function (e) { scriptLoaded(e); }
+        document.head.appendChild(script1);
+        var script2 = document.createElement('script');
+        script2.src = "../dist/x-mmah-strokes.js";
+        script2.onload = function (e) { scriptLoaded(e); }
+        document.head.appendChild(script2);
+      }
+
+      // Initializes mini-app once all scripts have loaded
+      function scriptLoaded() {
+        --_scriptsToLoad;
+        if (_scriptsToLoad != 0) return;
+        // All data scripts loaded
+        $(".drawingBoard").removeClass("loading");
+        // Create handwriting canvas (this is optional, you can bring your own)
+        _drawingBoard = HanziLookup.DrawingBoard($(".drawingBoard").first(), lookup);
+        // Undo/redo commands - have to do with input
+        $(".cmdUndo").click(function (evt) {
+          _drawingBoard.undoStroke();
+          _drawingBoard.redraw();
+          lookup();
+        });
+        $(".cmdClear").click(function (evt) {
+          _drawingBoard.clearCanvas();
+          _drawingBoard.redraw();
+          lookup();
+        });
+      }
+
+      // Fetches hand-drawn input from drawing board and looks up Hanzi
+      function lookup() {
+        // Decompose character from drawing board
+        var analyzedChar = new HanziLookup.AnalyzedCharacter(_drawingBoard.cloneStrokes());
+        // Look up with original HanziLookup data
+        var matcherHL = HanziLookup.Matcher(HanziLookup.StrokeDataHL);
+        var matchesHL = matcherHL.match(analyzedChar, 8);
+        showResults($(".hanziLookupChars"), matchesHL);
+        // Look up with MMAH data
+        var matcherMMAH = HanziLookup.Matcher(HanziLookup.StrokeDataMMAH);
+        var matchesMMAH = matcherMMAH.match(analyzedChar, 8);
+        showResults($(".mmahLookupChars"), matchesMMAH);
+      }
+
+      // Populates UI with (ordered) Hanzi matches
+      function showResults(elmHost, matches) {
+        elmHost.html("");
+        for (var i = 0; i != matches.length; ++i) {
+          elmHost.append("<span>" + matches[i].character + "</span>");
+        }
+      }
+    })();
+  </script>
+</body>
+</html>
