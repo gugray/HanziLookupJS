@@ -24,12 +24,25 @@ You can use the library immediately if you clone the repository and open the `in
   
   The matcher is a fairly lightweight object, but you only need one instance throughout your page's lifetime. To look up a new character, just pass the `AnalyzedCharacter` object to its `match` function. The second argument specifies how many candidates you want to receive. The function returns an array of matches (best first). In each match you're interested in the `character` member.
   
- ## The two data files
+## The two data files
  
-The file `x-hl-strokes.js` contains the original data from Jordan Kiang's HanziLookup. In this file, character entries contain the character's stroke count, plus a flat list of substrokes, each consisting of a direction and a normalized length. NN characters are encoded this way, but there are multiple entries for some to account for alternative ways fo writing them.
+The file `x-hl-strokes.js` contains the original data from Jordan Kiang's HanziLookup. In this file, character entries contain the character's stroke count, plus a flat list of substrokes, each consisting of a direction and a normalized length. NN characters are encoded this way, but there are multiple entries for some to account for alternative ways of writing them.
  
 The file `x-mmah-strokes.js` is derived from Make Me a Hanzi's `graphics.txt` and encodes 9507 characters. This file is richer because it also contains the normalized location (center point) of every substroke. The matching algorithm recognizes at runtime that this information is present and calculates the score accordingly: a substroke that is in the wrong places counts for less.
 
-Deriving `x-mmah-strokes.js` from `graphics.txt` consists of a little more than calculating the direction/length/location values for substrokes. Because MMAH's geometric data is derived from a Kai font, the medians (centerlines) contain an odd initial substroke for some stroke types, as shown in the image below:
+Deriving `x-mmah-strokes.js` from `graphics.txt` consists of a little more than calculating the direction/length/location values for substrokes. Because MMAH's geometric data is derived from a Kai font, the medians (centerlines) contain an odd initial substroke for some stroke types, as shown in the image below. The conversion tool include heuristics to recognize and remove these extra substrokes.
 
 ![Odd substrokes from Kai font](kai-extra.png)
+
+The conversion tool is a .NET Core application, included in the /mmah-convert subfolder. To repeat the conversion, you need to place `graphics.txt` from the MMAH repository in the /work subfolder.
+
+## License
+
+This Javascript library is derived from Jordan Kiang's original [HanziLookup](http://kiang.org/jordan/software/hanzilookup). In compliance with the original, it is licensed under [GNU LGPL](http://www.gnu.org/copyleft/gpl.html).
+
+The MMAH data is ultimately derived from the following fonts, via MMAH's graphics.txt:
+- Arphic PL KaitiM GB - https://apps.ubuntu.com/cat/applications/precise/fonts-arphic-gkai00mp/
+- Arphic PL UKai - https://apps.ubuntu.com/cat/applications/fonts-arphic-ukai/
+
+You can redistribute and/or modify x-mmah-strokes.js under the terms of the Arphic Public License as published by Arphic Technology Co., Ltd. You should have received a copy of this license (the directory "APL") along with x-mmah-strokes.js;
+if not, see <http://ftp.gnu.org/non-gnu/chinese-fonts-truetype/LICENSE>.
