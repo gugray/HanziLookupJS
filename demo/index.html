@@ -5,25 +5,39 @@
   <title>HanziLookupJS demo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
-    body { background-color: #fafafa; font-family: sans-serif; padding-top: 70px; }
-    div, h1, h2 { position: relative; float: left; box-sizing: border-box; height: auto; overflow: auto; width: 100%; }
-    .content { width: 810px; margin: 0 auto; float: none; background-color: #fdf3e6; padding: 20px; }
+    body { background-color: #fafafa; font-family: Verdana, sans-serif; padding-top: 70px; }
+    div, h1, h2 { position: relative; float: left; box-sizing: border-box; height: auto; overflow: auto; width: 100%; margin: 0; }
+    h1 { margin-bottom: 8px; }
+    h2 { font-weight: normal; }
+    .content, .header { 
+      width: 810px; margin: 0 auto; float: none; background-color: #6688aa; padding: 20px; color: #f0f0f0;
+      border-radius: 8px;
+    }
+    .header { text-align: center; margin-bottom: 20px; }
+    .header a { color: #fce566; text-decoration: none; }
     .colLeft { width: 270px; }
-    .colRight { width: 500px; }
+    .colRight { width: 500px; padding-left: 30px; }
     .drawingBoard { width: 250px; height: 250px; cursor: crosshair; clear: both; overflow: hidden; background-color: #fafafa; }
     .drawingBoard span { display: none; }
     .drawingBoard.loading { background-color: #f0f0f0; }
     .drawingBoard.loading span { display: inline; }
     .commands { width: 250px; margin-top: 3px; }
-    .cmd { width: 122px; background-color: #ededf8; text-align: center; cursor: default; padding: 3px; }
+    .cmd { width: 122px; background-color: #fce7c0; text-align: center; cursor: default; padding: 3px; color: #606060; }
     .cmd.cmdUndo { float: right; }
-    .cmd:hover { background-color: lavender; }
-    .charPicker { border: 1px solid #a0a0a0; padding: 3px; height: 70px; width: 400px; font-size: 48px; background-color: #fafafa; overflow: hidden; }
+    .cmd:hover { background-color: #f1d7a6; }
+    .charPicker { 
+      border: 1px solid #a0a0a0; padding: 3px; height: 70px; width: 400px; font-size: 48px; background-color: #fafafa; overflow: hidden; 
+      color: #606060;
+    }
     .charPicker span { cursor: default; }
-    .charPicker span:hover { background-color: lavender; }
+    .hanziLookupChars { margin-bottom: 20px; }
   </style>
 </head>
 <body>
+  <div class="header">
+    <h1>HanziLookupJS demo</h1>
+    <a href="https://github.com/gugray/HanziLookupJS">github.com/gugray/HanziLookupJS</a>
+  </div>
   <div class="content">
     <div class="colLeft">
       <h1>Stroke input</h1>
