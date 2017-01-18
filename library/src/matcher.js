@@ -20,6 +20,8 @@ HanziLookup.Matcher = (function (repo, looseness) {
   var _looseness = looseness || HanziLookup.DEFAULT_LOOSENESS;
   var _repo = repo;
   var _scoreMatrix = buildScoreMatrix();
+  var _charsChecked;
+  var _subStrokesCompared;
 
   var DIRECTION_SCORE_TABLE;
   var LENGTH_SCORE_TABLE;
@@ -28,6 +30,10 @@ HanziLookup.Matcher = (function (repo, looseness) {
   initScoreTables();
 
   function doMatch(inputChar, limit) {
+    // Diagnostic counters
+    _charsChecked = 0;
+    _subStrokesCompared = 0;
+
     // This will gather matches
     var matchCollector = new HanziLookup.MatchCollector(limit);
 
@@ -68,10 +74,6 @@ HanziLookup.Matcher = (function (repo, looseness) {
       if (cmpStrokeCount < minimumStrokes || cmpStrokeCount > maximumStrokes) continue;
       if (cmpSubStrokes.length < minSubStrokes || cmpSubStrokes.length > maxSubStrokes) continue;
       // Match against character in repo
-      // DBG
-      if (repoChar[0] == "士") {
-        var tjrklt = 0;
-      }
       var match = matchOne(strokeCount, inputSubStrokes, subStrokesRange, repoChar);
       // File; collector takes care of comparisons and keeping N-best
       matchCollector.fileMatch(match);
@@ -133,6 +135,9 @@ HanziLookup.Matcher = (function (repo, looseness) {
   }
 
   function matchOne(inputStrokeCount, inputSubStrokes, subStrokesRange, repoChar) {
+    // Diagnostic counter
+    ++_charsChecked;
+
     // Calculate score. This is the *actual* meat.
     var score = computeMatchScore(inputStrokeCount, inputSubStrokes, subStrokesRange, repoChar);
     // If the input character and the character in the repository have the same number of strokes, assign a small bonus.
@@ -187,6 +192,9 @@ HanziLookup.Matcher = (function (repo, looseness) {
   }
 
   function computeSubStrokeScore(inputDir, inputLen, repoDir, repoLen, inputCenter, repoCenter) {
+    // Diagnostic counter
+    ++_subStrokesCompared;
+
     // Score drops off after directions get sufficiently apart, start to rise again as the substrokes approach opposite directions.
     // This in particular reflects that occasionally strokes will be written backwards, this isn't totally bad, they get
     // some score for having the stroke oriented correctly.
@@ -275,6 +283,13 @@ HanziLookup.Matcher = (function (repo, looseness) {
   }
 
   return {
-    match: function(analyzedChar, limit) { return doMatch(analyzedChar, limit); }
+    match: function(analyzedChar, limit) { return doMatch(analyzedChar, limit); },
+
+    getCounters: function() {
+      return {
+        chars: _charsChecked,
+        subStrokes: _subStrokesCompared
+      };
+    }
   };
 });

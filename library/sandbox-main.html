@@ -27,10 +27,20 @@
       <h1>Control characters</h1>
       <input type="text" maxlength="16" id="txtChar" />
       <div class="charPicker controlChars"></div>
-      <h1>HanziLookup <span class="lookupTimer lookupTimerHL">--</span></h1>
+      <h1>HanziLookup</h1>
       <div class="charPicker hanziLookupChars"></div>
-      <h1>MMAH Lookup <span class="lookupTimer lookupTimerMMAH">--</span></h1>
+      <div class="diagnostics">
+        Time: <span class="lookupTimer lookupTimerHL">--</span>
+        Chars: <span class="charCount charCountHL">--</span> (<span class="charTime charTimeHL">--</span>)
+        Substrokes: <span class="ssCount ssCountHL">--</span> (<span class="ssTime ssTimeHL">--</span>)
+      </div>
+      <h1>MMAH Lookup</h1>
       <div class="charPicker mmahLookupChars"></div>
+      <div class="diagnostics">
+        Time: <span class="lookupTimer lookupTimerMMAH">--</span>
+        Chars: <span class="charCount charCountMMAH">--</span> (<span class="charTime charTimeMMAH">--</span>)
+        Substrokes: <span class="ssCount ssCountMMAH">--</span> (<span class="ssTime ssTimeMMAH">--</span>)
+      </div>
     </div>  
   </div>
 
