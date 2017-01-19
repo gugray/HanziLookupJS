@@ -9,22 +9,24 @@ var HanziLookup = HanziLookup || {};
 // Magic constants
 HanziLookup.MAX_CHARACTER_STROKE_COUNT = 48;
 HanziLookup.MAX_CHARACTER_SUB_STROKE_COUNT = 64;
-HanziLookup.DEFAULT_LOOSENESS = 0.25;
+HanziLookup.DEFAULT_LOOSENESS = 0.15;
 HanziLookup.AVG_SUBSTROKE_LENGTH = 0.33; // an average length (out of 1)
 HanziLookup.SKIP_PENALTY_MULTIPLIER = 1.75; // penalty mulitplier for skipping a stroke
 HanziLookup.CORRECT_NUM_STROKES_BONUS = 0.1; // max multiplier bonus if characters has the correct number of strokes
 HanziLookup.CORRECT_NUM_STROKES_CAP = 10; // characters with more strokes than this will not be multiplied
 
-HanziLookup.Matcher = (function (repo, looseness) {
+HanziLookup.Matcher = (function (repo, sbin, looseness) {
   // Magic value!
   var _looseness = looseness || HanziLookup.DEFAULT_LOOSENESS;
   var _repo = repo;
+  var _sbin = sbin;
   var _scoreMatrix = buildScoreMatrix();
   var _charsChecked;
   var _subStrokesCompared;
 
   var DIRECTION_SCORE_TABLE;
   var LENGTH_SCORE_TABLE;
+  var POS_SCORE_TABLE;
 
   // Init score tables
   initScoreTables();
@@ -156,7 +158,7 @@ HanziLookup.Matcher = (function (repo, looseness) {
       var inputDirection = inputSubStrokes[x].direction;
       var inputLength = inputSubStrokes[x].length;
       var inputCenter = [inputSubStrokes[x].centerX, inputSubStrokes[x].centerY];
-      for (var y = 0; y < repoChar[2].length; y++) {
+      for (var y = 0; y < repoChar[2]; y++) {
         // For each of the compare substrokes...
         // initialize the score as being not usable, it will only be set to a good
         // value if the two substrokes are within the range.
@@ -165,14 +167,15 @@ HanziLookup.Matcher = (function (repo, looseness) {
         {
           // The range is based on looseness.  If the two substrokes fall out of the range
           // then the comparison score for those two substrokes remains Double.MIN_VALUE and will not be used.
-          var compareDirection = repoChar[2][y][0];
-          var compareLength = repoChar[2][y][1];
+          var compareDirection = _sbin[repoChar[3] + y * 3]; // repoChar[2][y][0];
+          var compareLength = _sbin[repoChar[3] + y * 3 + 1]; // repoChar[2][y][1];
           var compareCenter = null;
-          if (repoChar[2][y].length > 2) compareCenter = [repoChar[2][y][2], repoChar[2][y][3]];
+          var bCenter = _sbin[repoChar[3] + y * 3 + 2];
+          if (bCenter > 0) compareCenter = [(bCenter & 0xf0) >>> 4, bCenter & 0x0f];
           // We incur penalties for skipping substrokes.
           // Get the scores that would be incurred either for skipping the substroke from the descriptor, or from the repository.
-          var skip1Score = _scoreMatrix[x][y + 1] - (inputLength * HanziLookup.SKIP_PENALTY_MULTIPLIER);
-          var skip2Score = _scoreMatrix[x + 1][y] - (compareLength * HanziLookup.SKIP_PENALTY_MULTIPLIER);
+          var skip1Score = _scoreMatrix[x][y + 1] - (inputLength / 256 * HanziLookup.SKIP_PENALTY_MULTIPLIER);
+          var skip2Score = _scoreMatrix[x + 1][y] - (compareLength / 256 * HanziLookup.SKIP_PENALTY_MULTIPLIER);
           // The skip score is the maximum of the scores that would result from skipping one of the substrokes.
           var skipScore = Math.max(skip1Score, skip2Score);
           // The matchScore is the score of actually comparing the two substrokes.
@@ -188,7 +191,7 @@ HanziLookup.Matcher = (function (repo, looseness) {
     }
     // At the end the score is the score at the opposite corner of the matrix...
     // don't need to use count - 1 since seed values occupy indices 0
-    return _scoreMatrix[inputSubStrokes.length][repoChar[2].length];
+    return _scoreMatrix[inputSubStrokes.length][repoChar[2]];
   }
 
   function computeSubStrokeScore(inputDir, inputLen, repoDir, repoLen, inputCenter, repoCenter) {
@@ -215,9 +218,13 @@ HanziLookup.Matcher = (function (repo, looseness) {
     if (repoCenter) {
       var dx = inputCenter[0] - repoCenter[0];
       var dy = inputCenter[1] - repoCenter[1];
-      var dist = Math.sqrt(dx * dx + dy * dy);
-      // TO-DO: a cubic function for this too
-      var closeness = 1 - dist;
+      var closeness = POS_SCORE_TABLE[dx * dx + dy * dy];
+
+      // var dist = Math.sqrt(dx * dx + dy * dy);
+      // // Distance is [0 .. 21.21] because X and Y are all [0..15]
+      // // Square distance is [0..450]
+      // // TO-DO: a cubic function for this too
+      // var closeness = 1 - dist / 22;
       // Closeness is always [0..1]. We reduce positive score, and make negative more negative.
       if (score > 0) score *= closeness;
       else score /= closeness;
@@ -231,7 +238,7 @@ HanziLookup.Matcher = (function (repo, looseness) {
     // The curve drops as the difference grows, but rises again some at the end because
     // a stroke that is 180 degrees from the expected direction maybe OK passable.
     var dirCurve = new HanziLookup.CubicCurve2D(0, 1.0, 0.5, 1.0, 0.25, -2.0, 1.0, 1.0);
-    DIRECTION_SCORE_TABLE = initCubicCurveScoreTable(dirCurve, 100);
+    DIRECTION_SCORE_TABLE = initCubicCurveScoreTable(dirCurve, 256);
 
     // Builds a precomputed array of values to use when getting the score between two substroke lengths.
     // A ratio less than one is computed for the two lengths, and the score should be the ratio * score table's length.
@@ -239,7 +246,12 @@ HanziLookup.Matcher = (function (repo, looseness) {
     // This is because we don't really expect lengths to vary a lot.
     // We are really just trying to distinguish between tiny strokes and long strokes.
     var lenCurve = new HanziLookup.CubicCurve2D(0, 0, 0.25, 1.0, 0.75, 1.0, 1.0, 1.0);
-    LENGTH_SCORE_TABLE = initCubicCurveScoreTable(lenCurve, 100);
+    LENGTH_SCORE_TABLE = initCubicCurveScoreTable(lenCurve, 129);
+
+    POS_SCORE_TABLE = [];
+    for (var i = 0; i <= 450; ++i) {
+      POS_SCORE_TABLE.push(1 - Math.sqrt(i) / 22);
+    }
   }
 
   function initCubicCurveScoreTable(curve, numSamples) {
@@ -259,27 +271,28 @@ HanziLookup.Matcher = (function (repo, looseness) {
   }
 
   function getDirectionScore(direction1, direction2, inputLength) {
-    // Get the difference in direction, less than PI.
+    // Both directions are [0..255], integer
     var theta = Math.abs(direction1 - direction2);
-    if (theta > Math.PI) theta = (2.0 * Math.PI) - theta;
-    // get the score from the table
-    var index = Math.round(theta / Math.PI * (DIRECTION_SCORE_TABLE.length - 1));
-    var directionScore = DIRECTION_SCORE_TABLE[index];
-    // we can give back a bonus if the input length is small.
-    // directions doesn't really matter for small dian-like strokes.
-    var shortLengthBonusMax = Math.min(1.0, 1.0 - directionScore);
-    var shortLengthBonus = shortLengthBonusMax * ((-4.0 * inputLength) + 1.0);
-    if (shortLengthBonus > 0) directionScore += shortLengthBonus;
+    // Lookup table for actual score function
+    var directionScore = DIRECTION_SCORE_TABLE[theta];
+    // Add bonus if the input length is small.
+    // Directions doesn't really matter for small dian-like strokes.
+    if (inputLength < 64) {
+      var shortLengthBonusMax = Math.min(1.0, 1.0 - directionScore);
+      var shortLengthBonus = shortLengthBonusMax * (1 - (inputLength / 64));
+      directionScore += shortLengthBonus;
+    }
     return directionScore;
   }
 
   function getLengthScore(length1, length2) {
     // Get the ratio between the two lengths less than one.
-    var lengthRatio = length1 < length2 ? length1 / length2 : length2 / length1;
-    // Score comes from the table.
-    var index = Math.round(lengthRatio * (LENGTH_SCORE_TABLE.length - 1));
-    var lengthScore = LENGTH_SCORE_TABLE[index];
-    return lengthScore;
+    var ratio;
+    // Shift for "times 128"
+    if (length1 > length2) ratio = Math.round((length2 << 7) / length1);
+    else ratio = Math.round((length1 << 7) / length2);
+    // Lookup table for actual score function
+    return LENGTH_SCORE_TABLE[ratio];
   }
 
   return {

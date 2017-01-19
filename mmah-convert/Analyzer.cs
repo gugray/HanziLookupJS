@@ -19,7 +19,7 @@ namespace MmahConvert
         public readonly List<SubStroke> AnalyzedStrokes = new List<SubStroke>();
 
         /// <summary>
-        /// Analyzes strokes (coordinates need to be in 250x250 system)
+        /// Analyzes strokes (coordinates need to be in 256x256 system)
         /// </summary>
         public Analyzer(List<Stroke> rawStrokes)
         {

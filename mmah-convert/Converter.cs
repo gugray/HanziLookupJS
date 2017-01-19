@@ -62,11 +62,11 @@ namespace MmahConvert
         }
 
         /// <summary>
-        /// Converts coordinates to sane top-down system; 250x250 canvas.
+        /// Converts coordinates to sane top-down system; 256x256 canvas.
         /// </summary>
         private static void normalize(Hanzi hanzi)
         {
-            double ratio = 250.0 / 1024.0;
+            double ratio = 256.0 / 1024.0;
             foreach (var stroke in hanzi.Strokes)
             {
                 for (int i = 0; i != stroke.Points.Count; ++i)
@@ -89,10 +89,69 @@ namespace MmahConvert
         /// </summary>
         /// <param name="mediansFileName">Un-analyzed visual strokes from medians.</param>
         /// <param name="strokesFileName">Analyzed substrokes for character recognition.</param>
-        public void WriteResults(string mediansFileName, string strokesFileName)
+        public void WriteResults(string mediansFileName, string strokesFileName, string compactFileName)
         {
             writeMedians(mediansFileName);
             writeStrokes(strokesFileName);
+            writeCompact(compactFileName);
+        }
+
+        private void writeCompact(string compactFileName)
+        {
+            List<Hanzi> hanziList = new List<Hanzi>();
+            hanziList.AddRange(data);
+            hanziList.Sort((x, y) => x.Strokes.Count.CompareTo(y.Strokes.Count));
+
+            Dictionary<char, int> hanziToSubStrokePos = new Dictionary<char, int>();
+            List<byte> subStrokeData = new List<byte>();
+            foreach (Hanzi hanzi in hanziList)
+            {
+                hanziToSubStrokePos[hanzi.Char] = subStrokeData.Count;
+                for (int i = 0; i != hanzi.SubStrokes.Count; ++i)
+                {
+                    SubStroke ss = hanzi.SubStrokes[i];
+                    double x = ss.Dir * 256.0 / Math.PI / 2.0;
+                    int y = (int)Math.Round(x);
+                    if (y == 256) y = 0;
+                    if (y < 0 || y > 255) throw new Exception("Value out of byte range.");
+                    subStrokeData.Add((byte)y);
+                    x = ss.Len * 255.0;
+                    y = (int)Math.Round(x);
+                    if (y < 0 || y > 255) throw new Exception("Value out of byte range.");
+                    subStrokeData.Add((byte)y);
+                    y = (int)Math.Round(ss.CenterX * 15.0);
+                    if (y < 0 || y > 15) throw new Exception("Value out of byte range.");
+                    byte coords = (byte)y;
+                    coords <<= 4;
+                    y = (int)Math.Round(ss.CenterY * 15.0);
+                    if (y < 0 || y > 15) throw new Exception("Value out of byte range.");
+                    coords += (byte)y;
+                    subStrokeData.Add(coords);
+                }
+            }
+            string base64 = Convert.ToBase64String(subStrokeData.ToArray());
+
+            using (FileStream fs = new FileStream(compactFileName, FileMode.Create, FileAccess.ReadWrite))
+            using (StreamWriter sw = new StreamWriter(fs))
+            {
+                sw.WriteLine("var HanziLookup = HanziLookup || { };");
+                sw.WriteLine("HanziLookup.CompactTableMMAH = [");
+
+                for (int i = 0; i != hanziList.Count; ++i)
+                {
+                    Hanzi hanzi = hanziList[i];
+                    string line = "[\"" + hanzi.Char + "\"," + hanzi.Strokes.Count + ",";
+                    line += hanzi.SubStrokes.Count + ",";
+                    line += hanziToSubStrokePos[hanzi.Char] + "]";
+                    if (i + 1 < hanziList.Count) line += ",";
+                    sw.WriteLine(line);
+                }
+                sw.WriteLine("];");
+                sw.WriteLine();
+
+                sw.Write("HanziLookup.CompactDataMMAH = ");
+                sw.WriteLine("\"" + base64 + "\";");
+            }
         }
 
         private static string writeSubStroke(SubStroke ss)
@@ -110,7 +169,6 @@ namespace MmahConvert
             using (FileStream fs = new FileStream(strokesFileName, FileMode.Create, FileAccess.ReadWrite))
             using (StreamWriter sw = new StreamWriter(fs))
             {
-                sw.WriteLine("\"use strict\";");
                 sw.WriteLine("var HanziLookup = HanziLookup || { };");
                 sw.WriteLine("HanziLookup.StrokeDataMMAH = [");
 
@@ -142,9 +200,8 @@ namespace MmahConvert
             using (FileStream fs = new FileStream(mediansFileName, FileMode.Create, FileAccess.ReadWrite))
             using (StreamWriter sw = new StreamWriter(fs))
             {
-                sw.WriteLine("\"use strict\";");
                 sw.WriteLine("var HanziLookup = HanziLookup || { };");
-                sw.WriteLine("HanziLookupHL.MediansMMAH = [");
+                sw.WriteLine("HanziLookup.MediansMMAH = [");
 
                 foreach (Hanzi hanzi in data)
                 {

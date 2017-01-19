@@ -28,22 +28,31 @@ var HanziLookupApp = (function() {
   });
 
   function initJSLoader() {
-    _scriptsToLoad = 3;
-    var script1 = document.createElement('script');
-    script1.src = "./src/x-hl-strokes.js";
-    script1.onload = function (e) { onScriptLoaded(e); }
-    document.head.appendChild(script1);
+    _scriptsToLoad = 2;
+    // var script1 = document.createElement('script');
+    // script1.src = "./src/x-hl-strokes.js";
+    // script1.onload = function (e) { onScriptLoaded(); }
+    // document.head.appendChild(script1);
     var script2 = document.createElement('script');
     script2.src = "./src/x-mmah-medians.js";
-    script2.onload = function (e) { onScriptLoaded(e); }
+    script2.onload = function (e) { onScriptLoaded(); }
     document.head.appendChild(script2);
-    var script3 = document.createElement('script');
-    script3.src = "./src/x-mmah-strokes.js";
-    script3.onload = function (e) { onScriptLoaded(e); }
-    document.head.appendChild(script3);
+    // var script3 = document.createElement('script');
+    // script3.src = "./src/x-mmah-strokes.js";
+    // script3.onload = function (e) { onScriptLoaded(); }
+    // document.head.appendChild(script3);
+    var script4 = document.createElement('script');
+    script4.src = "./src/x-mmah-compact.js";
+    script4.onload = function (e) { onCompactLoaded(); }
+    document.head.appendChild(script4);
   }
 
-  function onScriptLoaded (e) {
+  function onCompactLoaded() {
+    HanziLookup.CompactDataMMAH = HanziLookup.DecodeCompact(HanziLookup.CompactDataMMAH);
+    onScriptLoaded();
+  }
+
+  function onScriptLoaded () {
     --_scriptsToLoad;
     if (_scriptsToLoad == 0) {
       $("#jsLoader").addClass("loaded");
@@ -187,6 +196,22 @@ var HanziLookupApp = (function() {
   }
 
   function lookup(analyzedChar) {
+    // Compact MMAH
+    var tsStart = new Date().getTime();
+    var matcher = new HanziLookup.Matcher(HanziLookup.CompactTableMMAH, HanziLookup.CompactDataMMAH);
+    var matches = matcher.match(analyzedChar, 15);
+    var elapsed = new Date().getTime() - tsStart;
+    updateResultChars($(".mmahLookupChars"), matches);
+    var cnt = matcher.getCounters();
+    $(".lookupTimerMMAH").text(elapsed + "ms");
+    $(".charCountMMAH").text(cnt.chars);
+    $(".charTimeMMAH").text((elapsed / cnt.chars).toFixed(3));
+    $(".ssCountMMAH").text(cnt.subStrokes);
+    $(".ssTimeMMAH").text((elapsed / cnt.subStrokes * 1000).toFixed(3));
+    
+    return;
+    // -----
+
     // Vanilla HanziLookup
     var tsStart = new Date().getTime();
     var matcher = new HanziLookup.Matcher(HanziLookup.StrokeDataHL);

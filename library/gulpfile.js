@@ -25,6 +25,7 @@ gulp.task('scripts', function () {
     './src/analyzedStroke.js',
     './src/characterMatch.js',
     './src/cubicCurve2D.js',
+    './src/decodeCompact.js',
     './src/drawingBoard.js',
     './src/matchCollector.js',
     './src/matcher.js',

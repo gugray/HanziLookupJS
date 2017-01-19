@@ -26,10 +26,10 @@ HanziLookup.AnalyzedCharacter = (function (rawStrokes) {
   buildAnalyzedStrokes(rawStrokes);
 
   // Aaand, the result is :)
-  this.top = _top <= 250 ? _top : 0;
-  this.bottom = _bottom >= 0 ? _bottom : 250;
-  this.left = _left <= 250 ? _left : 0;
-  this.right = _right >= 0 ? _right : 250;
+  this.top = _top <= 256 ? _top : 0;
+  this.bottom = _bottom >= 0 ? _bottom : 256;
+  this.left = _left <= 256 ? _left : 0;
+  this.right = _right >= 0 ? _right : 256;
   this.analyzedStrokes = _analyzedStrokes;
   this.subStrokeCount = _subStrokeCount;
 
@@ -186,8 +186,13 @@ HanziLookup.AnalyzedCharacter = (function (rawStrokes) {
       var ix = pivotIndexes[i];
       if (ix == prevIx) continue;
       var direction = dir(points[prevIx], points[ix]);
+      direction = Math.round(direction * 256.0 / Math.PI / 2.0);
+      if (direction == 256) direction = 0;
       var normLength = normDist(points[prevIx], points[ix]);
+      normLength = Math.round(normLength * 255);
       var center = getNormCenter(points[prevIx], points[ix]);
+      center[0] = Math.round(center[0] * 15);
+      center[1] = Math.round(center[1] * 15);
       res.push(new HanziLookup.SubStroke(direction, normLength, center[0], center[1]));
       prevIx = ix;
     }

@@ -4,9 +4,18 @@
     {
         public static void Main(string[] args)
         {
-            Converter conv = new Converter();
-            conv.Parse("../work/graphics.txt");
-            conv.WriteResults("../src/js/x-mmah-medians.js", "../src/js/x-mmah-strokes.js");
+            if (args.Length != 1) return;
+            else if (args[0] == "mmah-convert")
+            {
+                Converter conv = new Converter();
+                conv.Parse("../work/graphics.txt");
+                conv.WriteResults("../library/src/x-mmah-medians.js",
+                    "../library/src/x-mmah-strokes.js",
+                    "../library/src/x-mmah-compact.js");
+            }
+            else if (args[0] == "hl-compact")
+            {
+            }
         }
     }
 }
