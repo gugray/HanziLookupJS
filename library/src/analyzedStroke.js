@@ -1,4 +1,3 @@
-/// <reference path="../lib/jquery-3.1.1.min.js" />
 /// <reference path="subStroke.js" />
 
 var HanziLookup = HanziLookup || {};

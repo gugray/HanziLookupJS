@@ -190,28 +190,30 @@ var HanziLookupApp = (function() {
     // Original
     var tsStart = new Date().getTime();
     var matcher = new HanziLookup.Matcher("orig");
-    var matches = matcher.match(analyzedChar, 15);
-    var elapsed = new Date().getTime() - tsStart;
-    updateResultChars($(".hanziLookupChars"), matches);
-    var cnt = matcher.getCounters();
-    $(".lookupTimerHL").text(elapsed + "ms");
-    $(".charCountHL").text(cnt.chars);
-    $(".charTimeHL").text((elapsed / cnt.chars).toFixed(3));
-    $(".ssCountHL").text(cnt.subStrokes);
-    $(".ssTimeHL").text((elapsed / cnt.subStrokes * 1000).toFixed(3));
+    matcher.match(analyzedChar, 15, function(matches) {
+      var elapsed = new Date().getTime() - tsStart;
+      updateResultChars($(".hanziLookupChars"), matches);
+      var cnt = matcher.getCounters();
+      $(".lookupTimerHL").text(elapsed + "ms");
+      $(".charCountHL").text(cnt.chars);
+      $(".charTimeHL").text((elapsed / cnt.chars).toFixed(3));
+      $(".ssCountHL").text(cnt.subStrokes);
+      $(".ssTimeHL").text((elapsed / cnt.subStrokes * 1000).toFixed(3));
+    });
 
     // MMAH
     tsStart = new Date().getTime();
     matcher = new HanziLookup.Matcher("mmah");
-    matches = matcher.match(analyzedChar, 15);
-    elapsed = new Date().getTime() - tsStart;
-    updateResultChars($(".mmahLookupChars"), matches);
-    cnt = matcher.getCounters();
-    $(".lookupTimerMMAH").text(elapsed + "ms");
-    $(".charCountMMAH").text(cnt.chars);
-    $(".charTimeMMAH").text((elapsed / cnt.chars).toFixed(3));
-    $(".ssCountMMAH").text(cnt.subStrokes);
-    $(".ssTimeMMAH").text((elapsed / cnt.subStrokes * 1000).toFixed(3));
+    matcher.match(analyzedChar, 15, function(matches) {
+      var elapsed = new Date().getTime() - tsStart;
+      updateResultChars($(".mmahLookupChars"), matches);
+      var cnt = matcher.getCounters();
+      $(".lookupTimerMMAH").text(elapsed + "ms");
+      $(".charCountMMAH").text(cnt.chars);
+      $(".charTimeMMAH").text((elapsed / cnt.chars).toFixed(3));
+      $(".ssCountMMAH").text(cnt.subStrokes);
+      $(".ssTimeMMAH").text((elapsed / cnt.subStrokes * 1000).toFixed(3));
+    });
   }
 
   function strokeFinished() {

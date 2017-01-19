@@ -20,7 +20,7 @@
     .drawingBoard { width: 250px; height: 250px; cursor: crosshair; clear: both; overflow: hidden; background-color: #fafafa; }
     .drawingBoard span { display: none; }
     .drawingBoard.loading { background-color: #f0f0f0; }
-    .drawingBoard.loading span { display: inline; }
+    .drawingBoard.loading span { display: inline; color: #606060; }
     .commands { width: 250px; margin-top: 3px; }
     .cmd { width: 122px; background-color: #fce7c0; text-align: center; cursor: default; padding: 3px; color: #606060; }
     .cmd.cmdUndo { float: right; }
@@ -60,31 +60,25 @@
   <script src="../dist/hanzilookup.min.js"></script>
   <script>
     var hanziLookupDemoApp = (function () {
-      var _scriptsToLoad;
+      var _filesToLoad;
       var _drawingBoard;
 
       $(document).ready(function () {
         // Only fetch data (large, takes long) when the page has loaded
-        loadDataScripts();
+        _filesToLoad = 2;
+        HanziLookup.init("mmah", "../dist/mmah.json", fileLoaded);
+        HanziLookup.init("orig", "../dist/orig.json", fileLoaded);
       });
 
-      // Loads JS files with character data asynchronously
-      function loadDataScripts() {
-        _scriptsToLoad = 2;
-        var script1 = document.createElement('script');
-        script1.src = "../dist/x-hl-strokes.js";
-        script1.onload = function (e) { scriptLoaded(e); }
-        document.head.appendChild(script1);
-        var script2 = document.createElement('script');
-        script2.src = "../dist/x-mmah-strokes.js";
-        script2.onload = function (e) { scriptLoaded(e); }
-        document.head.appendChild(script2);
-      }
-
       // Initializes mini-app once all scripts have loaded
-      function scriptLoaded() {
-        --_scriptsToLoad;
-        if (_scriptsToLoad != 0) return;
+      function fileLoaded(success) {
+        if (!success) {
+          _filesToLoad = -1;
+          $(".drawingBoard span").text("Failed to load data.");
+          return;
+        }
+        --_filesToLoad;
+        if (_filesToLoad != 0) return;
         // All data scripts loaded
         $(".drawingBoard").removeClass("loading");
         // Create handwriting canvas (this is optional, you can bring your own)
@@ -107,13 +101,15 @@
         // Decompose character from drawing board
         var analyzedChar = new HanziLookup.AnalyzedCharacter(_drawingBoard.cloneStrokes());
         // Look up with original HanziLookup data
-        var matcherHL = HanziLookup.Matcher(HanziLookup.StrokeDataHL);
-        var matchesHL = matcherHL.match(analyzedChar, 8);
-        showResults($(".hanziLookupChars"), matchesHL);
+        var matcherOrig = new HanziLookup.Matcher("orig");
+        matcherOrig.match(analyzedChar, 8, function(matches) {
+          showResults($(".hanziLookupChars"), matches);
+        });
         // Look up with MMAH data
-        var matcherMMAH = HanziLookup.Matcher(HanziLookup.StrokeDataMMAH);
-        var matchesMMAH = matcherMMAH.match(analyzedChar, 8);
-        showResults($(".mmahLookupChars"), matchesMMAH);
+        var matcherMMAH = new HanziLookup.Matcher("mmah");
+        matcherMMAH.match(analyzedChar, 8, function(matches) {
+          showResults($(".mmahLookupChars"), matches);
+        });
       }
 
       // Populates UI with (ordered) Hanzi matches

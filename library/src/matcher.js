@@ -1,4 +1,3 @@
-/// <reference path="../lib/jquery-3.1.1.min.js" />
 /// <reference path="analyzedCharacter.js" />
 /// <reference path="characterMatch.js" />
 /// <reference path="matchCollector.js" />
@@ -31,7 +30,7 @@ HanziLookup.Matcher = (function (dataName, looseness) {
   // Init score tables
   initScoreTables();
 
-  function doMatch(inputChar, limit) {
+  function doMatch(inputChar, limit, ready) {
     // Diagnostic counters
     _charsChecked = 0;
     _subStrokesCompared = 0;
@@ -82,7 +81,7 @@ HanziLookup.Matcher = (function (dataName, looseness) {
     }
     // When done: just return collected matches
     // This is an array of CharacterMatch objects
-    return matchCollector.getMatches();
+    ready(matchCollector.getMatches());
   }
   
   function getStrokesRange(strokeCount) {
@@ -296,7 +295,7 @@ HanziLookup.Matcher = (function (dataName, looseness) {
   }
 
   return {
-    match: function(analyzedChar, limit) { return doMatch(analyzedChar, limit); },
+    match: function(analyzedChar, limit, ready) { doMatch(analyzedChar, limit, ready); },
 
     getCounters: function() {
       return {

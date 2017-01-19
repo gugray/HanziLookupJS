@@ -27,6 +27,7 @@ gulp.task('scripts', function () {
     './src/cubicCurve2D.js',
     './src/decodeCompact.js',
     './src/drawingBoard.js',
+    './src/init.js',
     './src/matchCollector.js',
     './src/matcher.js',
     './src/strokeInputOverlay.js',
@@ -38,7 +39,7 @@ gulp.task('scripts', function () {
 });
 
 gulp.task('copydata', function() {
-  return gulp.src(['./src/x-hl-strokes.js', './src/x-mmah-strokes.js']).pipe(gulp.dest('../dist/'));
+  return gulp.src(['./data/mmah.json', './data/orig.json']).pipe(gulp.dest('../dist/'));
 });
 
 // Delete all compiled and bundled files
