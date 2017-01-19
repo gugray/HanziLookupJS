@@ -8,7 +8,7 @@ Online demo: <https://gugray.github.io/hanzilookupjs>
 ![HanziLookupJS demo](HanziLookupJS.gif)
 
 ## Getting started
-You can use the library immediately if you clone the repository and open the `index.html` file in the /demo folder in a browser. To use the library in your own application:
+You can use the library immediately if you clone the repository, publish it through an embedded server such as Mongoose, and open `/demo/index.html` in a browser. To use the library in your own application:
 
 - Include `hanzilookup.min.js` in your page, or bundle it with your application.
 
