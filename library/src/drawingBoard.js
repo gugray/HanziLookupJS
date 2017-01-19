@@ -1,9 +1,10 @@
 /// <reference path="../lib/jquery-3.1.1.min.js" />
 
-"use strict";
 var HanziLookup = HanziLookup || {};
 
 HanziLookup.DrawingBoard = (function (elmHost, strokeFinished) {
+  "use strict";
+  
   var _elmHost = elmHost;
   var _strokeFinised = strokeFinished;
   var _canvas;

@@ -134,8 +134,7 @@ namespace MmahConvert
             using (FileStream fs = new FileStream(compactFileName, FileMode.Create, FileAccess.ReadWrite))
             using (StreamWriter sw = new StreamWriter(fs))
             {
-                sw.WriteLine("var HanziLookup = HanziLookup || { };");
-                sw.WriteLine("HanziLookup.CompactTableMMAH = [");
+                sw.WriteLine("{ \"chars\": [");
 
                 for (int i = 0; i != hanziList.Count; ++i)
                 {
@@ -146,11 +145,9 @@ namespace MmahConvert
                     if (i + 1 < hanziList.Count) line += ",";
                     sw.WriteLine(line);
                 }
-                sw.WriteLine("];");
-                sw.WriteLine();
-
-                sw.Write("HanziLookup.CompactDataMMAH = ");
-                sw.WriteLine("\"" + base64 + "\";");
+                sw.WriteLine("],");
+                sw.WriteLine("\"substrokes\": \"" + base64 + "\"");
+                sw.WriteLine("}");
             }
         }
 

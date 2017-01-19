@@ -3,7 +3,6 @@
 /// <reference path="characterMatch.js" />
 /// <reference path="matchCollector.js" />
 
-"use strict";
 var HanziLookup = HanziLookup || {};
 
 // Magic constants
@@ -15,11 +14,12 @@ HanziLookup.SKIP_PENALTY_MULTIPLIER = 1.75; // penalty mulitplier for skipping a
 HanziLookup.CORRECT_NUM_STROKES_BONUS = 0.1; // max multiplier bonus if characters has the correct number of strokes
 HanziLookup.CORRECT_NUM_STROKES_CAP = 10; // characters with more strokes than this will not be multiplied
 
-HanziLookup.Matcher = (function (repo, sbin, looseness) {
-  // Magic value!
+HanziLookup.Matcher = (function (dataName, looseness) {
+  "use strict";
+  
   var _looseness = looseness || HanziLookup.DEFAULT_LOOSENESS;
-  var _repo = repo;
-  var _sbin = sbin;
+  var _repo = HanziLookup.data[dataName].chars;
+  var _sbin = HanziLookup.data[dataName].substrokes;
   var _scoreMatrix = buildScoreMatrix();
   var _charsChecked;
   var _subStrokesCompared;

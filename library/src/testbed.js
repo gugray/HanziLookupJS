@@ -5,10 +5,11 @@
 /// <reference path="strokeInputOverlay.js" />
 /// <reference path="subStroke.js" />
 
-"use strict";
 var HanziLookup = HanziLookup || {};
 
 var HanziLookupApp = (function() {
+  "use strict";
+  
   var _drawingBoard;
   var _scriptsToLoad = -1;
 
@@ -28,23 +29,13 @@ var HanziLookupApp = (function() {
   });
 
   function initJSLoader() {
-    _scriptsToLoad = 2;
-    // var script1 = document.createElement('script');
-    // script1.src = "./src/x-hl-strokes.js";
-    // script1.onload = function (e) { onScriptLoaded(); }
-    // document.head.appendChild(script1);
+    _scriptsToLoad = 3;
     var script2 = document.createElement('script');
-    script2.src = "./src/x-mmah-medians.js";
+    script2.src = "./data/x-mmah-medians.js";
     script2.onload = function (e) { onScriptLoaded(); }
     document.head.appendChild(script2);
-    // var script3 = document.createElement('script');
-    // script3.src = "./src/x-mmah-strokes.js";
-    // script3.onload = function (e) { onScriptLoaded(); }
-    // document.head.appendChild(script3);
-    var script4 = document.createElement('script');
-    script4.src = "./src/x-mmah-compact.js";
-    script4.onload = function (e) { onCompactLoaded(); }
-    document.head.appendChild(script4);
+    HanziLookup.init("orig", "./data/orig.json", onScriptLoaded);
+    HanziLookup.init("mmah", "./data/mmah.json", onScriptLoaded);
   }
 
   function onCompactLoaded() {
@@ -196,25 +187,9 @@ var HanziLookupApp = (function() {
   }
 
   function lookup(analyzedChar) {
-    // Compact MMAH
+    // Original
     var tsStart = new Date().getTime();
-    var matcher = new HanziLookup.Matcher(HanziLookup.CompactTableMMAH, HanziLookup.CompactDataMMAH);
-    var matches = matcher.match(analyzedChar, 15);
-    var elapsed = new Date().getTime() - tsStart;
-    updateResultChars($(".mmahLookupChars"), matches);
-    var cnt = matcher.getCounters();
-    $(".lookupTimerMMAH").text(elapsed + "ms");
-    $(".charCountMMAH").text(cnt.chars);
-    $(".charTimeMMAH").text((elapsed / cnt.chars).toFixed(3));
-    $(".ssCountMMAH").text(cnt.subStrokes);
-    $(".ssTimeMMAH").text((elapsed / cnt.subStrokes * 1000).toFixed(3));
-    
-    return;
-    // -----
-
-    // Vanilla HanziLookup
-    var tsStart = new Date().getTime();
-    var matcher = new HanziLookup.Matcher(HanziLookup.StrokeDataHL);
+    var matcher = new HanziLookup.Matcher("orig");
     var matches = matcher.match(analyzedChar, 15);
     var elapsed = new Date().getTime() - tsStart;
     updateResultChars($(".hanziLookupChars"), matches);
@@ -224,9 +199,10 @@ var HanziLookupApp = (function() {
     $(".charTimeHL").text((elapsed / cnt.chars).toFixed(3));
     $(".ssCountHL").text(cnt.subStrokes);
     $(".ssTimeHL").text((elapsed / cnt.subStrokes * 1000).toFixed(3));
-    // MMAH data
+
+    // MMAH
     tsStart = new Date().getTime();
-    matcher = new HanziLookup.Matcher(HanziLookup.StrokeDataMMAH);
+    matcher = new HanziLookup.Matcher("mmah");
     matches = matcher.match(analyzedChar, 15);
     elapsed = new Date().getTime() - tsStart;
     updateResultChars($(".mmahLookupChars"), matches);

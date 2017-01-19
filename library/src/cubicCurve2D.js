@@ -1,7 +1,8 @@
-"use strict";
 var HanziLookup = HanziLookup || {};
 
 HanziLookup.CubicCurve2D = (function (x1, y1, ctrlx1, ctrly1, ctrlx2, ctrly2, x2, y2) {
+  "use strict";
+  
   var _x1 = x1;
   var _y1 = y1;
   var _ctrlX1 = ctrlx1;

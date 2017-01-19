@@ -9,12 +9,15 @@
             {
                 Converter conv = new Converter();
                 conv.Parse("../work/graphics.txt");
-                conv.WriteResults("../library/src/x-mmah-medians.js",
-                    "../library/src/x-mmah-strokes.js",
-                    "../library/src/x-mmah-compact.js");
+                conv.WriteResults("../library/data/x-mmah-medians.js",
+                    "../library/data/x-mmah-strokes.js",
+                    "../library/data/mmah.json");
             }
             else if (args[0] == "hl-compact")
             {
+                Compacter comp = new Compacter();
+                comp.Parse("../library/data/x-hl-strokes.json");
+                comp.WriteResults("../library/data/orig.json");
             }
         }
     }

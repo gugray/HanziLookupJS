@@ -1,6 +1,6 @@
 var HanziLookup = HanziLookup || {};
 
-HanziLookup.DecodeCompact = (function (base64) {
+HanziLookup.decodeCompact = (function (base64) {
   "use strict";
 
   var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";

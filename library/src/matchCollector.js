@@ -1,10 +1,11 @@
 /// <reference path="../lib/jquery-3.1.1.min.js" />
 /// <reference path="analyzedCharacter.js" />
 
-"use strict";
 var HanziLookup = HanziLookup || {};
 
 HanziLookup.MatchCollector = (function (limit) {
+  "use strict";
+  
   var _count = 0;
   var _matches = [];
 

@@ -1,9 +1,10 @@
 /// <reference path="../lib/jquery-3.1.1.min.js" />
 
-"use strict";
 var HanziLookup = HanziLookup || {};
 
 HanziLookup.StrokeInputOverlay = (function(top, right, bottom, left, xStrokes, yStrokes, zStrokes) {
+  "use strict";
+  
   this.top = top;
   this.right = right;
   this.bottom = bottom;

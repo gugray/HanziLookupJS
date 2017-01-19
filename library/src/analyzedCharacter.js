@@ -2,10 +2,11 @@
 /// <reference path="analyzedStroke.js" />
 /// <reference path="subStroke.js" />
 
-"use strict";
 var HanziLookup = HanziLookup || {};
 
 HanziLookup.AnalyzedCharacter = (function (rawStrokes) {
+  "use strict";
+  
   // Magic constants used in decomposition of a stroke into substrokes
   var MIN_SEGMENT_LENGTH = 12.5;
   var MAX_LOCAL_LENGTH_RATIO = 1.1;
