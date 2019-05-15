@@ -1,10 +1,7 @@
 ```diff
-- UPDATE -
+- UPDATE: A Rust/WebAssembly version is now available -
 ```
 Check out [hanzi_lookup](https://github.com/gugray/hanzi_lookup), a Rust + WebAssembly port of this library, for a faster and more modern component.
-```diff
-- UPDATE -
-```
 
 
 # HanziLookupJS
