@@ -1,7 +1,16 @@
+```diff
+- UPDATE -
+```
+Check out [hanzi_lookup](https://github.com/gugray/hanzi_lookup), a Rust + WebAssembly port of this library, for a faster and more modern component.
+```diff
+- UPDATE -
+```
+
+
 # HanziLookupJS
 Free, open-source Chinese handwriting recognition in Javascript.
 
-The library is based on Jordan Kiang's [HanziLookup] (http://kiang.org/jordan/software/hanzilookup). It contains data derived from Shaunak Kishore's [Make Me a Hanzi] (https://github.com/skishore/makemeahanzi), and an improved character recognition algorithm.
+The library is based on Jordan Kiang's [HanziLookup](http://kiang.org/jordan/software/hanzilookup). It contains data derived from Shaunak Kishore's [Make Me a Hanzi](https://github.com/skishore/makemeahanzi), and an improved character recognition algorithm.
 
 Online demo: <https://gugray.github.io/hanzilookupjs>
 
