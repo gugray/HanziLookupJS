@@ -57,7 +57,7 @@ Both data sets store substroke descriptors in an `ArrayBuffer`, Base64-encoded i
 
 ## License
 
-This Javascript library is derived from Jordan Kiang's original [HanziLookup](http://kiang.org/jordan/software/hanzilookup). In compliance with the original, it is licensed under [GNU LGPL](http://www.gnu.org/copyleft/gpl.html). This license covers both the code and the original data in `orig.json`.
+This Javascript library is derived from Jordan Kiang's original [HanziLookup](http://kiang.org/jordan/software/hanzilookup). In compliance with the original, it is licensed under [GNU GPL](http://www.gnu.org/copyleft/gpl.html). This license covers both the code and the original data in `orig.json`.
 
 The data in `mmah.json` is ultimately derived from the following fonts, via Make Me a Hanzi's `graphics.txt`:
 - Arphic PL KaitiM GB - https://apps.ubuntu.com/cat/applications/precise/fonts-arphic-gkai00mp/
